@@ -15,6 +15,7 @@
  */
 package org.cloudfoundry.community.servicebroker.postgresql.config;
 
+import lombok.SneakyThrows;
 import org.cloudfoundry.community.servicebroker.config.BrokerApiVersionConfig;
 import org.cloudfoundry.community.servicebroker.model.Catalog;
 import org.cloudfoundry.community.servicebroker.model.Plan;
@@ -46,24 +47,20 @@ public class BrokerConfiguration {
     @Value("${MASTER_JDBC_URL}")
     private String jdbcUrl;
 
+    @SneakyThrows
     @Bean
     public Connection jdbc() {
-        try {
-            Connection conn = DriverManager.getConnection(this.jdbcUrl);
+        Connection conn = DriverManager.getConnection(this.jdbcUrl);
 
-            String serviceTable = "CREATE TABLE IF NOT EXISTS service (serviceinstanceid varchar(200) not null default '',"
-                    + " servicedefinitionid varchar(200) not null default '',"
-                    + " planid varchar(200) not null default '',"
-                    + " organizationguid varchar(200) not null default '',"
-                    + " spaceguid varchar(200) not null default '')";
+        String serviceTable = "CREATE TABLE IF NOT EXISTS service (serviceinstanceid varchar(200) not null default '',"
+                + " servicedefinitionid varchar(200) not null default '',"
+                + " planid varchar(200) not null default '',"
+                + " organizationguid varchar(200) not null default '',"
+                + " spaceguid varchar(200) not null default '')";
 
-            Statement createServiceTable = conn.createStatement();
-            createServiceTable.execute(serviceTable);
-            return conn;
-        } catch (SQLException e) {
-            logger.error("Error while creating initial 'service' table", e);
-            return null;
-        }
+        Statement createServiceTable = conn.createStatement();
+        createServiceTable.execute(serviceTable);
+        return conn;
     }
 
     @Bean

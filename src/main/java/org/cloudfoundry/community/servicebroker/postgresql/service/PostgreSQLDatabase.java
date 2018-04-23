@@ -47,8 +47,6 @@ public class PostgreSQLDatabase {
 
         try {
             statement.execute(query);
-        } catch (SQLException e) {
-            logger.error("Error while executing SQL UPDATE query '" + query + "'", e);
         } finally {
             statement.close();
         }
@@ -60,9 +58,6 @@ public class PostgreSQLDatabase {
         try {
             ResultSet result = statement.executeQuery(query);
             return getResultMapFromResultSet(result);
-        } catch (SQLException e) {
-            logger.error("Error while executing SQL SELECT query '" + query + "'", e);
-            return null;
         } finally {
             statement.close();
         }
@@ -81,8 +76,6 @@ public class PostgreSQLDatabase {
 
         try {
             preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            logger.error("Error while executing SQL prepared UPDATE query '" + query + "'", e);
         } finally {
             preparedStatement.close();
         }
@@ -102,9 +95,6 @@ public class PostgreSQLDatabase {
         try {
             ResultSet result = preparedStatement.executeQuery();
             return getResultMapFromResultSet(result);
-        } catch (SQLException e) {
-            logger.error("Error while executing SQL prepared SELECT query '" + query + "'", e);
-            return null;
         } finally {
             preparedStatement.close();
         }
