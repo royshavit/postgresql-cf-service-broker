@@ -27,6 +27,7 @@ public class Role {
     public void createRoleForInstance(String instanceId) throws SQLException {
         Utils.checkValidUUID(instanceId);
         PostgreSQLDatabase.executeUpdate("CREATE ROLE \"" + instanceId + "\"");
+        PostgreSQLDatabase.executeUpdate("GRANT \"" + PostgreSQLDatabase.getUsername() + "\" TO \"" + instanceId + "\"");
         PostgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + instanceId + "\"");
     }
 

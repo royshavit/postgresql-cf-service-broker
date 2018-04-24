@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
 import org.junit.Test;
+import org.postgresql.jdbc4.Jdbc4Connection;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -23,7 +24,7 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
     private PostgreSQLDatabase postgreSQLDatabase(String uri) {
         DatabaseMetaData metaData = mock(DatabaseMetaData.class);
         when(metaData.getURL()).thenReturn(uri);
-        Connection connection = mock(Connection.class);
+        Connection connection = mock(Jdbc4Connection.class);
         when(connection.getMetaData()).thenReturn(metaData);
         return new PostgreSQLDatabase(connection);
     }

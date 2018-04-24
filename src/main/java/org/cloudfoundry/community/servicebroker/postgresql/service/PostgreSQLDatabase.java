@@ -1,5 +1,6 @@
 package org.cloudfoundry.community.servicebroker.postgresql.service;
 
+import org.postgresql.jdbc4.Jdbc4Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,9 @@ public class PostgreSQLDatabase {
 
     private static int databasePort;
 
+    private static String username;
+    
+
     @Autowired
     public PostgreSQLDatabase(Connection conn) {
         PostgreSQLDatabase.conn = conn;
@@ -34,6 +38,7 @@ public class PostgreSQLDatabase {
             URI uri = new URI(cleanJdbcUrl);
             PostgreSQLDatabase.databaseHost = uri.getHost();
             PostgreSQLDatabase.databasePort = uri.getPort() == -1 ? 5432 : uri.getPort();
+            PostgreSQLDatabase.username = ((Jdbc4Connection) conn).getUserName();
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to get DatabaseMetadata from Connection", e);
         } catch (URISyntaxException e) {
@@ -106,6 +111,10 @@ public class PostgreSQLDatabase {
 
     public static int getDatabasePort() {
         return databasePort;
+    }
+
+    public static String getUsername() {
+        return username;
     }
 
     private static Map<String, String> getResultMapFromResultSet(ResultSet result) throws SQLException {
