@@ -17,6 +17,7 @@ package org.cloudfoundry.community.servicebroker.postgresql.config;
 
 import lombok.SneakyThrows;
 import org.cloudfoundry.community.servicebroker.config.BrokerApiVersionConfig;
+import org.cloudfoundry.community.servicebroker.model.BrokerApiVersion;
 import org.cloudfoundry.community.servicebroker.model.Catalog;
 import org.cloudfoundry.community.servicebroker.model.Plan;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
@@ -31,7 +32,6 @@ import org.springframework.context.annotation.FilterType;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,6 +43,7 @@ import java.util.Map;
 public class BrokerConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(BrokerConfiguration.class);
+    public static final String BROKER_API_VERSION = "2.12";
 
     @Value("${MASTER_JDBC_URL}")
     private String jdbcUrl;
@@ -65,7 +66,7 @@ public class BrokerConfiguration {
 
     @Bean
     public Catalog catalog() throws IOException {
-        ServiceDefinition serviceDefinition = new ServiceDefinition("pg", "PostgreSQL", "PostgreSQL on shared instance.",
+        ServiceDefinition serviceDefinition = new ServiceDefinition("pg", "postgres-shared", "PostgreSQL on shared instance.",
                 true, false, getPlans(), getTags(), getServiceDefinitionMetadata(), Arrays.asList("syslog_drain"), null);
         return new Catalog(Arrays.asList(serviceDefinition));
     }
@@ -86,7 +87,7 @@ public class BrokerConfiguration {
     }
 
     private static List<Plan> getPlans() {
-        Plan basic = new Plan("postgresql-basic-plan", "Basic PostgreSQL Plan",
+        Plan basic = new Plan("postgresql-basic-plan", "free",
                 "A PG plan providing a single database on a shared instance with limited storage.", getBasicPlanMetadata());
         return Arrays.asList(basic);
     }
@@ -100,4 +101,10 @@ public class BrokerConfiguration {
     private static List<String> getBasicPlanBullets() {
         return Arrays.asList("Single PG database", "Limited storage", "Shared instance");
     }
+
+    @Bean
+    public BrokerApiVersion brokerApiVersion() {
+        return new BrokerApiVersion(BROKER_API_VERSION);
+    }
+
 }

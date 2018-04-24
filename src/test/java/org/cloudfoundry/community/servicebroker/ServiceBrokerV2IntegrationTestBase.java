@@ -4,6 +4,7 @@ import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Header;
 import org.apache.http.HttpStatus;
+import org.cloudfoundry.community.servicebroker.postgresql.config.BrokerConfiguration;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -67,9 +68,7 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
 
     protected final String createOrRemoveBindingBasePath = "/v2/service_instances/%s/service_bindings/%s";
 
-    protected final Header apiVersionHeader = new Header("X-Broker-Api-Version", BROKER_API_VERSION);
-
-    public static final String BROKER_API_VERSION = "2.4";
+    protected final Header apiVersionHeader = new Header("X-Broker-Api-Version", BrokerConfiguration.BROKER_API_VERSION);
 
     @Before
     public void setUp() throws Exception {
@@ -145,7 +144,13 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
                 "  \"app_guid\":     \"" + appGuid + "\"\n" +
                 "}";
 
-        given().auth().basic(username, password).header(apiVersionHeader).request().contentType(ContentType.JSON).body(request_body).when().put(createBindingPath).then().statusCode(HttpStatus.SC_CREATED);
+        given()
+                .auth().basic(username, password).header(apiVersionHeader)
+                .request().contentType(ContentType.JSON).body(request_body)
+                .when().put(createBindingPath)
+                .then()
+                .statusCode(HttpStatus.SC_CREATED)
+        ;
     }
 
     /**

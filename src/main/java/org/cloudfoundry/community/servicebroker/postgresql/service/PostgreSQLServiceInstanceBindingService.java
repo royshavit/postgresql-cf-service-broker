@@ -61,6 +61,11 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
 
         Map<String, Object> credentials = new HashMap<String, Object>();
         credentials.put("uri", dbURL);
+        credentials.put("username", serviceInstanceId);
+        credentials.put("password", passwd);
+        credentials.put("hostname", PostgreSQLDatabase.getDatabaseHost());
+        credentials.put("port", PostgreSQLDatabase.getDatabasePort());
+        credentials.put("database", serviceInstanceId);
 
         return new ServiceInstanceBinding(bindingId, serviceInstanceId, credentials, null, appGuid);
     }
