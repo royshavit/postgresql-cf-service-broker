@@ -49,6 +49,9 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
     @Value("${service_id}")
     protected String serviceId;
 
+    @Value("${SERVICE_NAME}")
+    protected String serviceName;
+    
     @Value("${plan_id}")
     protected String planId;
 

@@ -50,6 +50,9 @@ public class BrokerConfiguration {
 
     @Value("${SERVICE_ID}")
     private String serviceId;
+    
+    @Value("${SERVICE_NAME}")
+    private String serviceName;
 
     @SneakyThrows
     @Bean
@@ -69,7 +72,7 @@ public class BrokerConfiguration {
 
     @Bean
     public Catalog catalog() throws IOException {
-        ServiceDefinition serviceDefinition = new ServiceDefinition(serviceId, "postgres-shared", "PostgreSQL on shared instance.",
+        ServiceDefinition serviceDefinition = new ServiceDefinition(serviceId, serviceName, "PostgreSQL on shared instance.",
                 true, false, getPlans(), getTags(), getServiceDefinitionMetadata(), Arrays.asList("syslog_drain"), null);
         return new Catalog(Arrays.asList(serviceDefinition));
     }

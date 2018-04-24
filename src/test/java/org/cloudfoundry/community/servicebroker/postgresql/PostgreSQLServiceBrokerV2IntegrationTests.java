@@ -71,7 +71,7 @@ public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2In
         ServiceDefinition serviceDefinition = brokerConfiguration.catalog().getServiceDefinitions().get(0);
 
         response.body("services[0].id", equalTo(serviceId));
-        response.body("services[0].name", equalTo(serviceDefinition.getName()));
+        response.body("services[0].name", equalTo(serviceName));
         response.body("services[0].description", equalTo(serviceDefinition.getDescription()));
         response.body("services[0].requires", equalTo(serviceDefinition.getRequires()));
         response.body("services[0].tags", equalTo(serviceDefinition.getTags()));
