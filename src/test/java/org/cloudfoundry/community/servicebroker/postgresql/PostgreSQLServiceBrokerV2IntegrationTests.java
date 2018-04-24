@@ -70,7 +70,7 @@ public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2In
         BrokerConfiguration brokerConfiguration = new BrokerConfiguration();
         ServiceDefinition serviceDefinition = brokerConfiguration.catalog().getServiceDefinitions().get(0);
 
-        response.body("services[0].id", equalTo(serviceDefinition.getId()));
+        response.body("services[0].id", equalTo(serviceId));
         response.body("services[0].name", equalTo(serviceDefinition.getName()));
         response.body("services[0].description", equalTo(serviceDefinition.getDescription()));
         response.body("services[0].requires", equalTo(serviceDefinition.getRequires()));
@@ -127,6 +127,10 @@ public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2In
 
         response.body("credentials.uri", containsString("postgres://" + instanceId));
         response.body("syslog_drain_url", is(nullValue()));
+        response.body("credentials.database", is(instanceId));
+        response.body("credentials.hostname", is("localhost"));
+        response.body("credentials.port", is(5432));
+        response.body("credentials.username", is(instanceId));
     }
 
     /**

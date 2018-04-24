@@ -48,6 +48,9 @@ public class BrokerConfiguration {
     @Value("${MASTER_JDBC_URL}")
     private String jdbcUrl;
 
+    @Value("${SERVICE_ID}")
+    private String serviceId;
+
     @SneakyThrows
     @Bean
     public Connection jdbc() {
@@ -66,7 +69,7 @@ public class BrokerConfiguration {
 
     @Bean
     public Catalog catalog() throws IOException {
-        ServiceDefinition serviceDefinition = new ServiceDefinition("pg", "postgres-shared", "PostgreSQL on shared instance.",
+        ServiceDefinition serviceDefinition = new ServiceDefinition(serviceId, "postgres-shared", "PostgreSQL on shared instance.",
                 true, false, getPlans(), getTags(), getServiceDefinitionMetadata(), Arrays.asList("syslog_drain"), null);
         return new Catalog(Arrays.asList(serviceDefinition));
     }
