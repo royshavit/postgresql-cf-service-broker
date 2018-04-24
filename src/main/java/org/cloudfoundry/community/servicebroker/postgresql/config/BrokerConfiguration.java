@@ -48,11 +48,8 @@ public class BrokerConfiguration {
     @Value("${MASTER_JDBC_URL}")
     private String jdbcUrl;
 
-    @Value("${SERVICE_ID}")
-    private String serviceId;
-    
-    @Value("${SERVICE_NAME}")
-    private String serviceName;
+    @Value("${space.name}")
+    private String spaceName;
 
     @SneakyThrows
     @Bean
@@ -72,7 +69,10 @@ public class BrokerConfiguration {
 
     @Bean
     public Catalog catalog() throws IOException {
-        ServiceDefinition serviceDefinition = new ServiceDefinition(serviceId, serviceName, "PostgreSQL on shared instance.",
+        ServiceDefinition serviceDefinition = new ServiceDefinition(
+                "pg-" + spaceName,
+                "pgshared-" + spaceName,
+                "PostgreSQL on shared instance.",
                 true, false, getPlans(), getTags(), getServiceDefinitionMetadata(), Arrays.asList("syslog_drain"), null);
         return new Catalog(Arrays.asList(serviceDefinition));
     }
@@ -92,9 +92,10 @@ public class BrokerConfiguration {
         return sdMetadata;
     }
 
-    private static List<Plan> getPlans() {
-        Plan basic = new Plan("postgresql-basic-plan", "free",
-                "A PG plan providing a single database on a shared instance with limited storage.", getBasicPlanMetadata());
+    private List<Plan> getPlans() {
+        Plan basic = new Plan("free-" + spaceName, "free",
+                "A PG plan providing a single database on a shared instance with limited storage.",
+                getBasicPlanMetadata(), true);
         return Arrays.asList(basic);
     }
 

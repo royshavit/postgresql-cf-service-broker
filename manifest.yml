@@ -8,5 +8,4 @@ applications:
   - name: postgresql-cf-service-broker
 env:
   MASTER_JDBC_URL: jdbc:postgresql://db-b6b32004-5181-4036-be30-051cb2d90fa8.c7uxaqxgfov3.us-west-2.rds.amazonaws.com:5432/postgres?user=us9cgbggxlhifak4&password=1tn53t3lb4s2ho5qjb7qdznk8
-  SERVICE_ID: pg-sysint
-  SERVICE_NAME: pg-sysint
+  space_name: sysint

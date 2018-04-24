@@ -5,7 +5,6 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.ValidatableResponse;
 import org.apache.http.HttpStatus;
 import org.cloudfoundry.community.servicebroker.ServiceBrokerV2IntegrationTestBase;
-import org.cloudfoundry.community.servicebroker.model.Plan;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
 import org.cloudfoundry.community.servicebroker.postgresql.config.Application;
 import org.cloudfoundry.community.servicebroker.postgresql.config.BrokerConfiguration;
@@ -21,8 +20,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
 
 import static com.jayway.restassured.RestAssured.given;
@@ -70,17 +68,12 @@ public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2In
         BrokerConfiguration brokerConfiguration = new BrokerConfiguration();
         ServiceDefinition serviceDefinition = brokerConfiguration.catalog().getServiceDefinitions().get(0);
 
-        response.body("services[0].id", equalTo(serviceId));
-        response.body("services[0].name", equalTo(serviceName));
+        response.body("services[0].id", equalTo("pg-" + spaceName));
+        response.body("services[0].name", equalTo("pgshared-" + spaceName));
         response.body("services[0].description", equalTo(serviceDefinition.getDescription()));
         response.body("services[0].requires", equalTo(serviceDefinition.getRequires()));
         response.body("services[0].tags", equalTo(serviceDefinition.getTags()));
-
-        List<String> planIds = new ArrayList<String>();
-        for(Plan plan: serviceDefinition.getPlans()) {
-            planIds.add(plan.getId());
-        }
-        response.body("services[0].plans.id", equalTo(planIds));
+        response.body("services[0].plans.id", equalTo(Collections.singletonList("free-" + spaceName)));
     }
 
     /**

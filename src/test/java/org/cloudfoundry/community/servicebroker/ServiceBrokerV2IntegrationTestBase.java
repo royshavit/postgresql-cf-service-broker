@@ -16,6 +16,7 @@ import org.springframework.boot.test.IntegrationTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
+import javax.annotation.PostConstruct;
 import java.util.UUID;
 
 import static com.jayway.restassured.RestAssured.given;
@@ -46,13 +47,11 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
     @Value("${security.user.password}")
     protected String password;
 
-    @Value("${service_id}")
     protected String serviceId;
 
-    @Value("${SERVICE_NAME}")
-    protected String serviceName;
+    @Value("${space.name}")
+    protected String spaceName;
     
-    @Value("${plan_id}")
     protected String planId;
 
     protected final String username = "user";
@@ -72,6 +71,12 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
     protected final String createOrRemoveBindingBasePath = "/v2/service_instances/%s/service_bindings/%s";
 
     protected final Header apiVersionHeader = new Header("X-Broker-Api-Version", BrokerConfiguration.BROKER_API_VERSION);
+    
+    @PostConstruct
+    public void init() {
+        serviceId = "pg-" + spaceName;
+        planId = "free-" + spaceName;
+    }
 
     @Before
     public void setUp() throws Exception {
