@@ -15,6 +15,7 @@
  */
 package org.cloudfoundry.community.servicebroker.postgresql.service;
 
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigInteger;
@@ -22,18 +23,21 @@ import java.security.SecureRandom;
 import java.sql.SQLException;
 
 @Component
+@AllArgsConstructor
 public class Role {
+
+    private final PostgreSQLDatabase postgreSQLDatabase;
 
     public void createRoleForInstance(String instanceId) throws SQLException {
         Utils.checkValidUUID(instanceId);
-        PostgreSQLDatabase.executeUpdate("CREATE ROLE \"" + instanceId + "\"");
-        PostgreSQLDatabase.executeUpdate("GRANT \"" + PostgreSQLDatabase.getUsername() + "\" TO \"" + instanceId + "\"");
-        PostgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + instanceId + "\"");
+        postgreSQLDatabase.executeUpdate("CREATE ROLE \"" + instanceId + "\"");
+        postgreSQLDatabase.executeUpdate("GRANT \"" + postgreSQLDatabase.getUsername() + "\" TO \"" + instanceId + "\"");
+        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + instanceId + "\"");
     }
 
     public void deleteRole(String instanceId) throws SQLException {
         Utils.checkValidUUID(instanceId);
-        PostgreSQLDatabase.executeUpdate("DROP ROLE IF EXISTS \"" + instanceId + "\"");
+        postgreSQLDatabase.executeUpdate("DROP ROLE IF EXISTS \"" + instanceId + "\"");
     }
 
     public String bindRoleToDatabase(String dbInstanceId) throws SQLException {
@@ -42,12 +46,12 @@ public class Role {
         SecureRandom random = new SecureRandom();
         String passwd = new BigInteger(130, random).toString(32);
 
-        PostgreSQLDatabase.executeUpdate("ALTER ROLE \"" + dbInstanceId + "\" LOGIN password '" + passwd + "'");
+        postgreSQLDatabase.executeUpdate("ALTER ROLE \"" + dbInstanceId + "\" LOGIN password '" + passwd + "'");
         return passwd;
     }
 
     public void unBindRoleFromDatabase(String dbInstanceId) throws SQLException{
         Utils.checkValidUUID(dbInstanceId);
-        PostgreSQLDatabase.executeUpdate("ALTER ROLE \"" + dbInstanceId + "\" NOLOGIN");
+        postgreSQLDatabase.executeUpdate("ALTER ROLE \"" + dbInstanceId + "\" NOLOGIN");
     }
 }

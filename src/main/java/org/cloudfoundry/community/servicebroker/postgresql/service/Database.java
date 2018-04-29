@@ -15,6 +15,7 @@
  */
 package org.cloudfoundry.community.servicebroker.postgresql.service;
 
+import lombok.AllArgsConstructor;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.slf4j.Logger;
@@ -28,14 +29,17 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@AllArgsConstructor
 public class Database {
 
     private static final Logger logger = LoggerFactory.getLogger(Database.class);
-
+    
+    private final PostgreSQLDatabase postgreSQLDatabase;
+    
     public void createDatabaseForInstance(String instanceId, String serviceId, String planId, String organizationGuid, String spaceGuid) throws SQLException {
         Utils.checkValidUUID(instanceId);
-        PostgreSQLDatabase.executeUpdate("CREATE DATABASE \"" + instanceId + "\" ENCODING 'UTF8'");
-        PostgreSQLDatabase.executeUpdate("REVOKE all on database \"" + instanceId + "\" from public");
+        postgreSQLDatabase.executeUpdate("CREATE DATABASE \"" + instanceId + "\" ENCODING 'UTF8'");
+        postgreSQLDatabase.executeUpdate("REVOKE all on database \"" + instanceId + "\" from public");
 
         Map<Integer, String> parameterMap = new HashMap<Integer, String>();
         parameterMap.put(1, instanceId);
@@ -44,7 +48,7 @@ public class Database {
         parameterMap.put(4, organizationGuid);
         parameterMap.put(5, spaceGuid);
 
-        PostgreSQLDatabase.executePreparedUpdate("INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES (?, ?, ?, ?, ?)", parameterMap);
+        postgreSQLDatabase.executePreparedUpdate("INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES (?, ?, ?, ?, ?)", parameterMap);
     }
 
     public void deleteDatabase(String instanceId) throws SQLException {
@@ -53,7 +57,7 @@ public class Database {
         Map<Integer, String> parameterMap = new HashMap<Integer, String>();
         parameterMap.put(1, instanceId);
 
-        Map<String, String> result = PostgreSQLDatabase.executeSelect("SELECT current_user");
+        Map<String, String> result = postgreSQLDatabase.executeSelect("SELECT current_user");
         String currentUser = null;
 
         if(result != null) {
@@ -64,10 +68,10 @@ public class Database {
             logger.error("Current user for instance '" + instanceId + "' could not be found");
         }
 
-        PostgreSQLDatabase.executePreparedSelect("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()", parameterMap);
-        PostgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + currentUser + "\"");
-        PostgreSQLDatabase.executeUpdate("DROP DATABASE IF EXISTS \"" + instanceId + "\"");
-        PostgreSQLDatabase.executePreparedUpdate("DELETE FROM service WHERE serviceinstanceid=?", parameterMap);
+        postgreSQLDatabase.executePreparedSelect("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()", parameterMap);
+        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + currentUser + "\"");
+        postgreSQLDatabase.executeUpdate("DROP DATABASE IF EXISTS \"" + instanceId + "\"");
+        postgreSQLDatabase.executePreparedUpdate("DELETE FROM service WHERE serviceinstanceid=?", parameterMap);
     }
 
     public ServiceInstance findServiceInstance(String instanceId) throws SQLException {
@@ -76,7 +80,7 @@ public class Database {
         Map<Integer, String> parameterMap = new HashMap<Integer, String>();
         parameterMap.put(1, instanceId);
 
-        Map<String, String> result = PostgreSQLDatabase.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", parameterMap);
+        Map<String, String> result = postgreSQLDatabase.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", parameterMap);
 
         String serviceDefinitionId = result.get("servicedefinitionid");
         String organizationGuid = result.get("organizationguid");
@@ -93,10 +97,10 @@ public class Database {
     }
 
     public int getDatabasePort() {
-        return PostgreSQLDatabase.getDatabasePort();
+        return postgreSQLDatabase.getDatabasePort();
     }
 
     public String getDatabaseHost() {
-        return PostgreSQLDatabase.getDatabaseHost();
+        return postgreSQLDatabase.getDatabaseHost();
     }
 }

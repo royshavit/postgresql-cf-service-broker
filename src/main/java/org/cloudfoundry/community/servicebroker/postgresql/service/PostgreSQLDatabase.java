@@ -17,18 +17,15 @@ public class PostgreSQLDatabase {
 
     private static final Logger logger = LoggerFactory.getLogger(PostgreSQLDatabase.class);
 
-    private static Connection conn;
-
-    private static String databaseHost;
-
-    private static int databasePort;
-
-    private static String username;
+    private final Connection conn; 
+    private final String databaseHost; 
+    private final int databasePort; 
+    private final String username;
     
 
     @Autowired
     public PostgreSQLDatabase(Connection conn) {
-        PostgreSQLDatabase.conn = conn;
+        this.conn = conn;
 
         try {
             String jdbcUrl = conn.getMetaData().getURL();
@@ -36,9 +33,9 @@ public class PostgreSQLDatabase {
             String cleanJdbcUrl = jdbcUrl.replace("jdbc:", "");
 
             URI uri = new URI(cleanJdbcUrl);
-            PostgreSQLDatabase.databaseHost = uri.getHost();
-            PostgreSQLDatabase.databasePort = uri.getPort() == -1 ? 5432 : uri.getPort();
-            PostgreSQLDatabase.username = ((Jdbc4Connection) conn).getUserName();
+            databaseHost = uri.getHost();
+            databasePort = uri.getPort() == -1 ? 5432 : uri.getPort();
+            username = ((Jdbc4Connection) conn).getUserName();
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to get DatabaseMetadata from Connection", e);
         } catch (URISyntaxException e) {
@@ -47,7 +44,7 @@ public class PostgreSQLDatabase {
     }
 
 
-    public static void executeUpdate(String query) throws SQLException {
+    public void executeUpdate(String query) throws SQLException {
         Statement statement = conn.createStatement();
 
         try {
@@ -57,7 +54,7 @@ public class PostgreSQLDatabase {
         }
     }
 
-    public static Map<String, String> executeSelect(String query) throws SQLException {
+    public Map<String, String> executeSelect(String query) throws SQLException {
         Statement statement = conn.createStatement();
 
         try {
@@ -68,7 +65,7 @@ public class PostgreSQLDatabase {
         }
     }
 
-    public static void executePreparedUpdate(String query, Map<Integer, String> parameterMap) throws SQLException {
+    public void executePreparedUpdate(String query, Map<Integer, String> parameterMap) throws SQLException {
         if(parameterMap == null) {
             throw new IllegalStateException("parameterMap cannot be null");
         }
@@ -86,7 +83,7 @@ public class PostgreSQLDatabase {
         }
     }
 
-    public static Map<String, String> executePreparedSelect(String query, Map<Integer, String> parameterMap) throws SQLException {
+    public Map<String, String> executePreparedSelect(String query, Map<Integer, String> parameterMap) throws SQLException {
         if(parameterMap == null) {
             throw new IllegalStateException("parameterMap cannot be null");
         }
@@ -105,15 +102,15 @@ public class PostgreSQLDatabase {
         }
     }
 
-    public static String getDatabaseHost() {
+    public String getDatabaseHost() {
         return databaseHost;
     }
 
-    public static int getDatabasePort() {
+    public int getDatabasePort() {
         return databasePort;
     }
 
-    public static String getUsername() {
+    public String getUsername() {
         return username;
     }
 

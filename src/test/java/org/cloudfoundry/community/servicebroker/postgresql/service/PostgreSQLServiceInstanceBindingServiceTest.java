@@ -34,11 +34,12 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
     @Test
     public void createServiceInstanceBinding() {
         String uri = "postgres://00000000-0000-0001-0000-000000000001:secret@db.com:123/00000000-0000-0001-0000-000000000001";
-        postgreSQLDatabase(uri);
-        Role role = spy(new Role());
+        PostgreSQLDatabase postgreSQLDatabase = postgreSQLDatabase(uri);
+        Role role = spy(new Role(postgreSQLDatabase));
         String password = "secret";
         doReturn(password).when(role).bindRoleToDatabase(anyString());
-        PostgreSQLServiceInstanceBindingService bindingService = new PostgreSQLServiceInstanceBindingService(new Database(), role);
+        PostgreSQLServiceInstanceBindingService bindingService
+                = new PostgreSQLServiceInstanceBindingService(new Database(postgreSQLDatabase), role);
         String instanceId = new UUID(1, 1).toString();
         CreateServiceInstanceBindingRequest bindingRequest
                 = new CreateServiceInstanceBindingRequest("pg", "free", "appguid")
