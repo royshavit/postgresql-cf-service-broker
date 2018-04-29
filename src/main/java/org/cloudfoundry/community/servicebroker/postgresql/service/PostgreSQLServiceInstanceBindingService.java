@@ -22,6 +22,7 @@ import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceBinding
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
+import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.DatabaseRepository;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleRepository;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
@@ -48,24 +49,27 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
         UUID serviceInstanceId = UUID.fromString(createServiceInstanceBindingRequest.getServiceInstanceId());
         UUID appGuid = UUID.fromString(createServiceInstanceBindingRequest.getAppGuid());
         String passwd;
+        Database database;
 
         try {
+            database = databaseRepository.findOne(serviceInstanceId)
+                    .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + serviceInstanceId));
             passwd = roleRepository.bindRoleToDatabase(serviceInstanceId);
         } catch (SQLException e) {
             log.error("Error while creating service instance binding '" + bindingId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
         }
 
-        String dbURL = String.format("postgres://%s:%s@%s:%d/%s", serviceInstanceId, passwd, databaseRepository.getDatabaseHost(),
-                databaseRepository.getDatabasePort(), serviceInstanceId);
+        String dbURL = String.format("postgres://%s:%s@%s:%d/%s", serviceInstanceId, passwd, database.getHost(),
+                database.getPort(), database.getName());
 
-        Map<String, Object> credentials = new HashMap<String, Object>();
+        Map<String, Object> credentials = new HashMap<>();
         credentials.put("uri", dbURL);
         credentials.put("username", serviceInstanceId);
         credentials.put("password", passwd);
-        credentials.put("hostname", databaseRepository.getDatabaseHost());
-        credentials.put("port", databaseRepository.getDatabasePort());
-        credentials.put("database", serviceInstanceId);
+        credentials.put("hostname", database.getHost());
+        credentials.put("port", database.getPort());
+        credentials.put("database", database.getName());
 
         return new ServiceInstanceBinding(bindingId.toString(), serviceInstanceId.toString(), credentials, null, appGuid.toString());
     }

@@ -1,5 +1,6 @@
 package org.cloudfoundry.community.servicebroker.postgresql.service;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
@@ -28,7 +29,7 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
         when(metaData.getURL()).thenReturn(uri);
         Connection connection = mock(Jdbc4Connection.class);
         when(connection.getMetaData()).thenReturn(metaData);
-        return new PostgreSQLDatabase(connection);
+        return spy(new PostgreSQLDatabase(connection));
     }
 
 
@@ -37,6 +38,7 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
     public void createServiceInstanceBinding() {
         String uri = "postgres://00000000-0000-0001-0000-000000000001:secret@db.com:123/00000000-0000-0001-0000-000000000001";
         PostgreSQLDatabase postgreSQLDatabase = postgreSQLDatabase(uri);
+        doReturn(ImmutableMap.of("", "")).when(postgreSQLDatabase).executePreparedSelect(anyString(), any());
         RoleRepository roleRepository = spy(new RoleRepository(postgreSQLDatabase));
         String password = "secret";
         doReturn(password).when(roleRepository).bindRoleToDatabase(any());
@@ -58,5 +60,5 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
         assertEquals(123, credentials.get("port"));
         assertEquals(instanceId, credentials.get("username"));
     }
-    
+
 }

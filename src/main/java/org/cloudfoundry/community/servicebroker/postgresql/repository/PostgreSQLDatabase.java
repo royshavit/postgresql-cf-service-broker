@@ -1,5 +1,6 @@
 package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.postgresql.jdbc4.Jdbc4Connection;
 import org.springframework.stereotype.Component;
@@ -14,9 +15,12 @@ import java.util.Map;
 @Component
 public class PostgreSQLDatabase {
 
-    private final Connection conn; 
-    private final String databaseHost; 
-    private final int databasePort; 
+    private final Connection conn;
+    @Getter
+    private final String databaseHost;
+    @Getter
+    private final int databasePort;
+    @Getter
     private final String username;
     
 
@@ -96,18 +100,6 @@ public class PostgreSQLDatabase {
         } finally {
             preparedStatement.close();
         }
-    }
-
-    public String getDatabaseHost() {
-        return databaseHost;
-    }
-
-    public int getDatabasePort() {
-        return databasePort;
-    }
-
-    public String getUsername() {
-        return username;
     }
 
     private static Map<String, String> getResultMapFromResultSet(ResultSet result) throws SQLException {

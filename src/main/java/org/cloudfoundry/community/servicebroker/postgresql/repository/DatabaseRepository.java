@@ -17,11 +17,13 @@ package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -31,15 +33,15 @@ public class DatabaseRepository {
     
     private final PostgreSQLDatabase postgreSQLDatabase;
     
-    public void createDatabaseForInstance(UUID instanceId) throws SQLException {
-        postgreSQLDatabase.executeUpdate("CREATE DATABASE \"" + instanceId + "\" ENCODING 'UTF8'");
-        postgreSQLDatabase.executeUpdate("REVOKE all on database \"" + instanceId + "\" from public");
-        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + instanceId + "\"");
+    public void save(UUID databaseName, UUID owner) throws SQLException {
+        postgreSQLDatabase.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
+        postgreSQLDatabase.executeUpdate("REVOKE all on database \"" + databaseName + "\" from public");
+        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + owner + "\"");
     }
 
-    public void deleteDatabase(UUID instanceId) throws SQLException {
-        Map<Integer, String> parameterMap = new HashMap<Integer, String>();
-        parameterMap.put(1, instanceId.toString());
+    public void delete(UUID databaseName) throws SQLException {
+        Map<Integer, String> parameterMap = new HashMap<>();
+        parameterMap.put(1, databaseName.toString());
 
         Map<String, String> result = postgreSQLDatabase.executeSelect("SELECT current_user");
         String currentUser = null;
@@ -49,19 +51,23 @@ public class DatabaseRepository {
         }
 
         if(currentUser == null) {
-            log.error("Current user for instance '" + instanceId + "' could not be found");
+            log.error("Current user for instance '" + databaseName + "' could not be found");
         }
 
         postgreSQLDatabase.executePreparedSelect("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()", parameterMap);
-        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + currentUser + "\"");
-        postgreSQLDatabase.executeUpdate("DROP DATABASE IF EXISTS \"" + instanceId + "\"");
+        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + currentUser + "\"");
+        postgreSQLDatabase.executeUpdate("DROP DATABASE IF EXISTS \"" + databaseName + "\"");
     }
 
-    public int getDatabasePort() {
-        return postgreSQLDatabase.getDatabasePort();
+    public Optional<Database> findOne(UUID databaseName) throws SQLException {
+        Map<Integer, String> parameterMap = new HashMap<>();
+        parameterMap.put(1, databaseName.toString());
+        Map<String, String> result = postgreSQLDatabase.executePreparedSelect("SELECT 1 FROM pg_database WHERE datname = ?", parameterMap);
+        if (result.isEmpty()) {
+            return Optional.empty();
+        } else {
+            return Optional.of(new Database(postgreSQLDatabase.getDatabaseHost(), postgreSQLDatabase.getDatabasePort(), databaseName));
+        }
     }
 
-    public String getDatabaseHost() {
-        return postgreSQLDatabase.getDatabaseHost();
-    }
 }

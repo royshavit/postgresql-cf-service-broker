@@ -52,7 +52,7 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
         UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
         try {
             roleRepository.createRoleForInstance(serviceInstanceId);
-            databaseRepository.createDatabaseForInstance(serviceInstanceId);
+            databaseRepository.save(serviceInstanceId, serviceInstanceId);
             serviceInstanceRepository.save(createServiceInstanceRequest);
         } catch (SQLException e) {
             log.error("Error while creating service instance '" + serviceInstanceId + "'", e);
@@ -73,8 +73,8 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
     @SneakyThrows
     private void deleteServiceInstance(UUID serviceInstanceId) {
         try {
-            serviceInstanceRepository.deleteDatabase(serviceInstanceId);
-            databaseRepository.deleteDatabase(serviceInstanceId);
+            serviceInstanceRepository.delete(serviceInstanceId);
+            databaseRepository.delete(serviceInstanceId);
             roleRepository.deleteRole(serviceInstanceId);
         } catch (SQLException e) {
             log.error("Error while deleting service instance '" + serviceInstanceId + "'", e);

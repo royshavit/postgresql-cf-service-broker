@@ -45,7 +45,7 @@ public class ServiceInstanceRepository {
         postgreSQLDatabase.executePreparedUpdate("INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES (?, ?, ?, ?, ?)", parameterMap);
     }
 
-    public void deleteDatabase(UUID instanceId) throws SQLException {
+    public void delete(UUID instanceId) throws SQLException {
         Map<Integer, String> parameterMap = new HashMap<>();
         parameterMap.put(1, instanceId.toString());
         postgreSQLDatabase.executePreparedUpdate("DELETE FROM service WHERE serviceinstanceid=?", parameterMap);
