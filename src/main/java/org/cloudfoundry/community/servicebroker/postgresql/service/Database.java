@@ -91,4 +91,12 @@ public class Database {
     public List<ServiceInstance> getAllServiceInstances() {
         return Collections.emptyList();
     }
+
+    public int getDatabasePort() {
+        return PostgreSQLDatabase.getDatabasePort();
+    }
+
+    public String getDatabaseHost() {
+        return PostgreSQLDatabase.getDatabaseHost();
+    }
 }

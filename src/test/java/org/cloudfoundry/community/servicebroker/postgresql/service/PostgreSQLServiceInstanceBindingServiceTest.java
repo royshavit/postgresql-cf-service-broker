@@ -38,7 +38,7 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
         Role role = spy(new Role());
         String password = "secret";
         doReturn(password).when(role).bindRoleToDatabase(anyString());
-        PostgreSQLServiceInstanceBindingService bindingService = new PostgreSQLServiceInstanceBindingService(role);
+        PostgreSQLServiceInstanceBindingService bindingService = new PostgreSQLServiceInstanceBindingService(new Database(), role);
         String instanceId = new UUID(1, 1).toString();
         CreateServiceInstanceBindingRequest bindingRequest
                 = new CreateServiceInstanceBindingRequest("pg", "free", "appguid")

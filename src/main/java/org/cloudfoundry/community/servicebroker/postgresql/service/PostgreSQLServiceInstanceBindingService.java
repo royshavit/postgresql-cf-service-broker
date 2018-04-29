@@ -15,6 +15,7 @@
  */
 package org.cloudfoundry.community.servicebroker.postgresql.service;
 
+import lombok.AllArgsConstructor;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceBindingExistsException;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
@@ -23,7 +24,6 @@ import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -31,16 +31,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@AllArgsConstructor
 public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceBindingService {
 
     private static final Logger logger = LoggerFactory.getLogger(PostgreSQLServiceInstanceBindingService.class);
 
+    private final Database db;
     private final Role role;
 
-    @Autowired
-    public PostgreSQLServiceInstanceBindingService(Role role) {
-        this.role = role;
-    }
 
     @Override
     public ServiceInstanceBinding createServiceInstanceBinding(CreateServiceInstanceBindingRequest createServiceInstanceBindingRequest)
@@ -57,14 +55,15 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
             throw new ServiceBrokerException(e.getMessage());
         }
 
-        String dbURL = String.format("postgres://%s:%s@%s:%d/%s", serviceInstanceId, passwd, PostgreSQLDatabase.getDatabaseHost(), PostgreSQLDatabase.getDatabasePort(), serviceInstanceId);
+        String dbURL = String.format("postgres://%s:%s@%s:%d/%s", serviceInstanceId, passwd, db.getDatabaseHost(),
+                db.getDatabasePort(), serviceInstanceId);
 
         Map<String, Object> credentials = new HashMap<String, Object>();
         credentials.put("uri", dbURL);
         credentials.put("username", serviceInstanceId);
         credentials.put("password", passwd);
-        credentials.put("hostname", PostgreSQLDatabase.getDatabaseHost());
-        credentials.put("port", PostgreSQLDatabase.getDatabasePort());
+        credentials.put("hostname", db.getDatabaseHost());
+        credentials.put("port", db.getDatabasePort());
         credentials.put("database", serviceInstanceId);
 
         return new ServiceInstanceBinding(bindingId, serviceInstanceId, credentials, null, appGuid);
