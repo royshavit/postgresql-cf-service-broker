@@ -42,7 +42,6 @@ import java.util.Map;
 @ComponentScan(basePackages = "org.cloudfoundry.community.servicebroker", excludeFilters = { @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = BrokerApiVersionConfig.class) })
 public class BrokerConfiguration {
 
-    private static final Logger logger = LoggerFactory.getLogger(BrokerConfiguration.class);
     public static final String BROKER_API_VERSION = "2.12";
 
     @Value("${MASTER_JDBC_URL}")

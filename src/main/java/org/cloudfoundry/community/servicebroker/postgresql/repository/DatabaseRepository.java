@@ -16,24 +16,20 @@
 package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.postgresql.util.Utils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.sql.*;
-import java.util.Collections;
+import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Component
+@Slf4j
 @AllArgsConstructor
 public class DatabaseRepository {
-
-    private static final Logger logger = LoggerFactory.getLogger(DatabaseRepository.class);
     
     private final PostgreSQLDatabase postgreSQLDatabase;
     
@@ -66,7 +62,7 @@ public class DatabaseRepository {
         }
 
         if(currentUser == null) {
-            logger.error("Current user for instance '" + instanceId + "' could not be found");
+            log.error("Current user for instance '" + instanceId + "' could not be found");
         }
 
         postgreSQLDatabase.executePreparedSelect("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()", parameterMap);
@@ -90,11 +86,6 @@ public class DatabaseRepository {
 
         CreateServiceInstanceRequest wrapper = new CreateServiceInstanceRequest(serviceDefinitionId, planId, organizationGuid, spaceGuid).withServiceInstanceId(instanceId);
         return new ServiceInstance(wrapper);
-    }
-
-    // TODO needs to be implemented
-    public List<ServiceInstance> getAllServiceInstances() {
-        return Collections.emptyList();
     }
 
     public int getDatabasePort() {

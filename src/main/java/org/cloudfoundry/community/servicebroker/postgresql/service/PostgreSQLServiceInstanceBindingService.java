@@ -16,6 +16,7 @@
 package org.cloudfoundry.community.servicebroker.postgresql.service;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceBindingExistsException;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
@@ -24,8 +25,6 @@ import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.DatabaseRepository;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleRepository;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -33,10 +32,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@Slf4j
 @AllArgsConstructor
 public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceBindingService {
-
-    private static final Logger logger = LoggerFactory.getLogger(PostgreSQLServiceInstanceBindingService.class);
 
     private final DatabaseRepository databaseRepository;
     private final RoleRepository roleRepository;
@@ -48,12 +46,12 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
         String bindingId = createServiceInstanceBindingRequest.getBindingId();
         String serviceInstanceId = createServiceInstanceBindingRequest.getServiceInstanceId();
         String appGuid = createServiceInstanceBindingRequest.getAppGuid();
-        String passwd = "";
+        String passwd;
 
         try {
             passwd = roleRepository.bindRoleToDatabase(serviceInstanceId);
         } catch (SQLException e) {
-            logger.error("Error while creating service instance binding '" + bindingId + "'", e);
+            log.error("Error while creating service instance binding '" + bindingId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
         }
 
@@ -79,7 +77,7 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
         try {
             roleRepository.unBindRoleFromDatabase(serviceInstanceId);
         } catch (SQLException e) {
-            logger.error("Error while deleting service instance binding '" + bindingId + "'", e);
+            log.error("Error while deleting service instance binding '" + bindingId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
         }
         return new ServiceInstanceBinding(bindingId, serviceInstanceId, null, null, null);

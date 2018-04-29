@@ -15,20 +15,18 @@
  */
 package org.cloudfoundry.community.servicebroker.postgresql.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.UUID;
 
+@Slf4j
 public class Utils {
-
-    private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
     private Utils() {
     }
 
     public static void checkValidUUID(String uuidString) {
-        logger.info("Checking if this UUID string is a valid UUID: " + uuidString);
+        log.info("Checking if this UUID string is a valid UUID: " + uuidString);
         UUID uuid = UUID.fromString(uuidString);
 
         if(!uuidString.equals(uuid.toString())) {
