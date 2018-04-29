@@ -32,6 +32,7 @@ import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -46,15 +47,11 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
     @Override
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
             throws ServiceInstanceExistsException, ServiceBrokerException {
-        String serviceInstanceId = createServiceInstanceRequest.getServiceInstanceId();
-        String serviceId = createServiceInstanceRequest.getServiceDefinitionId();
-        String planId = createServiceInstanceRequest.getPlanId();
-        String organizationGuid = createServiceInstanceRequest.getOrganizationGuid();
-        String spaceGuid = createServiceInstanceRequest.getSpaceGuid();
+        UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
         try {
             roleRepository.createRoleForInstance(serviceInstanceId);
             databaseRepository.createDatabaseForInstance(serviceInstanceId);
-            serviceInstanceRepository.save(serviceInstanceId, serviceId, planId, organizationGuid, spaceGuid);
+            serviceInstanceRepository.save(createServiceInstanceRequest);
         } catch (SQLException e) {
             log.error("Error while creating service instance '" + serviceInstanceId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
@@ -65,7 +62,7 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
     @Override
     public ServiceInstance deleteServiceInstance(DeleteServiceInstanceRequest deleteServiceInstanceRequest)
             throws ServiceBrokerException {
-        String serviceInstanceId = deleteServiceInstanceRequest.getServiceInstanceId();
+        UUID serviceInstanceId = UUID.fromString(deleteServiceInstanceRequest.getServiceInstanceId());
         ServiceInstance instance = getServiceInstance(serviceInstanceId);
 
         try {
@@ -87,6 +84,10 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
 
     @Override
     public ServiceInstance getServiceInstance(String id) {
+        return getServiceInstance(UUID.fromString(id));
+    }
+    
+    private ServiceInstance getServiceInstance(UUID id) {
         try {
             return serviceInstanceRepository.findServiceInstance(id);
         } catch (SQLException e) {

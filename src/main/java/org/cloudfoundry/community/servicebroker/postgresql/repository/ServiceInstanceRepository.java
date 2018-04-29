@@ -19,12 +19,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
-import org.cloudfoundry.community.servicebroker.postgresql.util.Utils;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -32,31 +32,26 @@ import java.util.Map;
 public class ServiceInstanceRepository {
     
     private final PostgreSQLDatabase postgreSQLDatabase;
-    
-    public void save(String instanceId, String serviceId, String planId, String organizationGuid, String spaceGuid) throws SQLException {
-        Utils.checkValidUUID(instanceId);
+
+    public void save(CreateServiceInstanceRequest createServiceInstanceRequest) throws SQLException {
         Map<Integer, String> parameterMap = new HashMap<Integer, String>();
-        parameterMap.put(1, instanceId);
-        parameterMap.put(2, serviceId);
-        parameterMap.put(3, planId);
-        parameterMap.put(4, organizationGuid);
-        parameterMap.put(5, spaceGuid);
+        parameterMap.put(1, createServiceInstanceRequest.getServiceInstanceId());
+        parameterMap.put(2, createServiceInstanceRequest.getServiceDefinitionId());
+        parameterMap.put(3, createServiceInstanceRequest.getPlanId());
+        parameterMap.put(4, createServiceInstanceRequest.getOrganizationGuid());
+        parameterMap.put(5, createServiceInstanceRequest.getSpaceGuid());
         postgreSQLDatabase.executePreparedUpdate("INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES (?, ?, ?, ?, ?)", parameterMap);
     }
 
-    public void deleteDatabase(String instanceId) throws SQLException {
-        Utils.checkValidUUID(instanceId);
-
-        Map<Integer, String> parameterMap = new HashMap<Integer, String>();
-        parameterMap.put(1, instanceId);
+    public void deleteDatabase(UUID instanceId) throws SQLException {
+        Map<Integer, String> parameterMap = new HashMap<>();
+        parameterMap.put(1, instanceId.toString());
         postgreSQLDatabase.executePreparedUpdate("DELETE FROM service WHERE serviceinstanceid=?", parameterMap);
     }
 
-    public ServiceInstance findServiceInstance(String instanceId) throws SQLException {
-        Utils.checkValidUUID(instanceId);
-
+    public ServiceInstance findServiceInstance(UUID instanceId) throws SQLException {
         Map<Integer, String> parameterMap = new HashMap<Integer, String>();
-        parameterMap.put(1, instanceId);
+        parameterMap.put(1, instanceId.toString());
         Map<String, String> result = postgreSQLDatabase.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", parameterMap);
 
         String serviceDefinitionId = result.get("servicedefinitionid");
@@ -64,7 +59,9 @@ public class ServiceInstanceRepository {
         String planId = result.get("planid");
         String spaceGuid = result.get("spaceguid");
 
-        CreateServiceInstanceRequest wrapper = new CreateServiceInstanceRequest(serviceDefinitionId, planId, organizationGuid, spaceGuid).withServiceInstanceId(instanceId);
+        CreateServiceInstanceRequest wrapper
+                = new CreateServiceInstanceRequest(serviceDefinitionId, planId, organizationGuid, spaceGuid)
+                .withServiceInstanceId(instanceId.toString());
         return new ServiceInstance(wrapper);
     }
 

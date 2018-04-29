@@ -113,7 +113,7 @@ public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2In
     @Test
     public void case3_createBindingSucceedsWithCredentials() throws Exception {
         // same as super code, but we need the response here
-        String createBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, serviceId);
+        String createBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID);
         String request_body = "{\n" +
                 "  \"plan_id\":      \"" + planId + "\",\n" +
                 "  \"service_id\":   \"" + serviceId + "\",\n" +
@@ -140,7 +140,7 @@ public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2In
     @Test
     public void case4_removeBindingSucceedsWithCredentials() throws Exception {
         // same as super code, but we need the response here
-        String removeBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, serviceId) + "?service_id=" + serviceId + "&plan_id=" + planId;
+        String removeBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID) + "?service_id=" + serviceId + "&plan_id=" + planId;
         ValidatableResponse response = given().auth().basic(username, password).header(apiVersionHeader).when().delete(removeBindingPath).then().statusCode(HttpStatus.SC_OK);
 
         // response body is empty json

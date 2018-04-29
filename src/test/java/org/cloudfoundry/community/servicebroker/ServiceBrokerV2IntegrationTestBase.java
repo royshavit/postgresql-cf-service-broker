@@ -63,6 +63,8 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
     protected static String instanceId;
 
     protected static String appGuid;
+    
+    protected static final UUID BINDING_ID = new UUID(1, 1);
 
     protected final String fetchCatalogPath = "/v2/catalog";
 
@@ -87,6 +89,7 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
     public static void generateUniqueIds() {
         instanceId = UUID.randomUUID().toString();
         appGuid = UUID.randomUUID().toString();
+        
     }
 
     /**
@@ -139,13 +142,13 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
 
     @Test
     public void case3_createBindingFailsWithoutCredentials() throws Exception {
-        String createBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, serviceId);
+        String createBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID);
         given().auth().none().when().put(createBindingPath).then().statusCode(HttpStatus.SC_UNAUTHORIZED);
     }
 
     @Test
     public void case3_createBindingSucceedsWithCredentials() throws Exception {
-        String createBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, serviceId);
+        String createBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID);
         String request_body = "{\n" +
                 "  \"plan_id\":      \"" + planId + "\",\n" +
                 "  \"service_id\":   \"" + serviceId + "\",\n" +
@@ -169,13 +172,13 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
 
     @Test
     public void case4_removeBindingFailsWithoutCredentials() throws Exception {
-        String removeBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, serviceId) + "?service_id=" + serviceId + "&plan_id=" + planId;
+        String removeBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID) + "?service_id=" + serviceId + "&plan_id=" + planId;
         given().auth().none().when().delete(removeBindingPath).then().statusCode(HttpStatus.SC_UNAUTHORIZED);
     }
 
     @Test
     public void case4_removeBindingSucceedsWithCredentials() throws Exception {
-        String removeBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, serviceId) + "?service_id=" + serviceId + "&plan_id=" + planId;
+        String removeBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID) + "?service_id=" + serviceId + "&plan_id=" + planId;
         given().auth().basic(username, password).header(apiVersionHeader).when().delete(removeBindingPath).then().statusCode(HttpStatus.SC_OK);
     }
 

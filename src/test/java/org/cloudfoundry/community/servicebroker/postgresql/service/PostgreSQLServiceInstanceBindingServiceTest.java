@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -40,13 +39,13 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
         PostgreSQLDatabase postgreSQLDatabase = postgreSQLDatabase(uri);
         RoleRepository roleRepository = spy(new RoleRepository(postgreSQLDatabase));
         String password = "secret";
-        doReturn(password).when(roleRepository).bindRoleToDatabase(anyString());
+        doReturn(password).when(roleRepository).bindRoleToDatabase(any());
         PostgreSQLServiceInstanceBindingService bindingService
                 = new PostgreSQLServiceInstanceBindingService(new DatabaseRepository(postgreSQLDatabase), roleRepository);
-        String instanceId = new UUID(1, 1).toString();
+        UUID instanceId = new UUID(1, 1);
         CreateServiceInstanceBindingRequest bindingRequest
-                = new CreateServiceInstanceBindingRequest("pg", "free", "appguid")
-                .withServiceInstanceId(instanceId)
+                = new CreateServiceInstanceBindingRequest("pg", "free", new UUID(1, 2).toString())
+                .withServiceInstanceId(instanceId.toString())
                 .withBindingId(new UUID(1, 2).toString());
 
         ServiceInstanceBinding binding = bindingService.createServiceInstanceBinding(bindingRequest);

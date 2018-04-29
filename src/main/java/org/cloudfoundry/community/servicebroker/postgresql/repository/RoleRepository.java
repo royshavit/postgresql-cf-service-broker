@@ -16,12 +16,12 @@
 package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.AllArgsConstructor;
-import org.cloudfoundry.community.servicebroker.postgresql.util.Utils;
 import org.springframework.stereotype.Component;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.sql.SQLException;
+import java.util.UUID;
 
 @Component
 @AllArgsConstructor
@@ -29,20 +29,16 @@ public class RoleRepository {
 
     private final PostgreSQLDatabase postgreSQLDatabase;
 
-    public void createRoleForInstance(String instanceId) throws SQLException {
-        Utils.checkValidUUID(instanceId);
+    public void createRoleForInstance(UUID instanceId) throws SQLException {
         postgreSQLDatabase.executeUpdate("CREATE ROLE \"" + instanceId + "\"");
         postgreSQLDatabase.executeUpdate("GRANT \"" + postgreSQLDatabase.getUsername() + "\" TO \"" + instanceId + "\"");
     }
 
-    public void deleteRole(String instanceId) throws SQLException {
-        Utils.checkValidUUID(instanceId);
+    public void deleteRole(UUID instanceId) throws SQLException {
         postgreSQLDatabase.executeUpdate("DROP ROLE IF EXISTS \"" + instanceId + "\"");
     }
 
-    public String bindRoleToDatabase(String dbInstanceId) throws SQLException {
-        Utils.checkValidUUID(dbInstanceId);
-
+    public String bindRoleToDatabase(UUID dbInstanceId) throws SQLException {
         SecureRandom random = new SecureRandom();
         String passwd = new BigInteger(130, random).toString(32);
 
@@ -50,8 +46,7 @@ public class RoleRepository {
         return passwd;
     }
 
-    public void unBindRoleFromDatabase(String dbInstanceId) throws SQLException{
-        Utils.checkValidUUID(dbInstanceId);
+    public void unBindRoleFromDatabase(UUID dbInstanceId) throws SQLException{
         postgreSQLDatabase.executeUpdate("ALTER ROLE \"" + dbInstanceId + "\" NOLOGIN");
     }
 }

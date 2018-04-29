@@ -17,12 +17,12 @@ package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.cloudfoundry.community.servicebroker.postgresql.util.Utils;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -31,18 +31,15 @@ public class DatabaseRepository {
     
     private final PostgreSQLDatabase postgreSQLDatabase;
     
-    public void createDatabaseForInstance(String instanceId) throws SQLException {
-        Utils.checkValidUUID(instanceId);
+    public void createDatabaseForInstance(UUID instanceId) throws SQLException {
         postgreSQLDatabase.executeUpdate("CREATE DATABASE \"" + instanceId + "\" ENCODING 'UTF8'");
         postgreSQLDatabase.executeUpdate("REVOKE all on database \"" + instanceId + "\" from public");
         postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + instanceId + "\"");
     }
 
-    public void deleteDatabase(String instanceId) throws SQLException {
-        Utils.checkValidUUID(instanceId);
-
+    public void deleteDatabase(UUID instanceId) throws SQLException {
         Map<Integer, String> parameterMap = new HashMap<Integer, String>();
-        parameterMap.put(1, instanceId);
+        parameterMap.put(1, instanceId.toString());
 
         Map<String, String> result = postgreSQLDatabase.executeSelect("SELECT current_user");
         String currentUser = null;

@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -43,9 +44,9 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
     @Override
     public ServiceInstanceBinding createServiceInstanceBinding(CreateServiceInstanceBindingRequest createServiceInstanceBindingRequest)
             throws ServiceInstanceBindingExistsException, ServiceBrokerException {
-        String bindingId = createServiceInstanceBindingRequest.getBindingId();
-        String serviceInstanceId = createServiceInstanceBindingRequest.getServiceInstanceId();
-        String appGuid = createServiceInstanceBindingRequest.getAppGuid();
+        UUID bindingId = UUID.fromString(createServiceInstanceBindingRequest.getBindingId());
+        UUID serviceInstanceId = UUID.fromString(createServiceInstanceBindingRequest.getServiceInstanceId());
+        UUID appGuid = UUID.fromString(createServiceInstanceBindingRequest.getAppGuid());
         String passwd;
 
         try {
@@ -66,20 +67,20 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
         credentials.put("port", databaseRepository.getDatabasePort());
         credentials.put("database", serviceInstanceId);
 
-        return new ServiceInstanceBinding(bindingId, serviceInstanceId, credentials, null, appGuid);
+        return new ServiceInstanceBinding(bindingId.toString(), serviceInstanceId.toString(), credentials, null, appGuid.toString());
     }
 
     @Override
     public ServiceInstanceBinding deleteServiceInstanceBinding(DeleteServiceInstanceBindingRequest deleteServiceInstanceBindingRequest)
             throws ServiceBrokerException {
-        String serviceInstanceId = deleteServiceInstanceBindingRequest.getInstance().getServiceInstanceId();
-        String bindingId = deleteServiceInstanceBindingRequest.getBindingId();
+        UUID serviceInstanceId = UUID.fromString(deleteServiceInstanceBindingRequest.getInstance().getServiceInstanceId());
+        UUID bindingId = UUID.fromString(deleteServiceInstanceBindingRequest.getBindingId());
         try {
             roleRepository.unBindRoleFromDatabase(serviceInstanceId);
         } catch (SQLException e) {
             log.error("Error while deleting service instance binding '" + bindingId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
         }
-        return new ServiceInstanceBinding(bindingId, serviceInstanceId, null, null, null);
+        return new ServiceInstanceBinding(bindingId.toString(), serviceInstanceId.toString(), null, null, null);
     }
 }
