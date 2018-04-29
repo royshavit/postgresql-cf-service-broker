@@ -33,7 +33,6 @@ public class RoleRepository {
         Utils.checkValidUUID(instanceId);
         postgreSQLDatabase.executeUpdate("CREATE ROLE \"" + instanceId + "\"");
         postgreSQLDatabase.executeUpdate("GRANT \"" + postgreSQLDatabase.getUsername() + "\" TO \"" + instanceId + "\"");
-        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + instanceId + "\"");
     }
 
     public void deleteRole(String instanceId) throws SQLException {

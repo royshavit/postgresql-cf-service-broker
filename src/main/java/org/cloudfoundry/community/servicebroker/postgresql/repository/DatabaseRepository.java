@@ -17,8 +17,6 @@ package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
-import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.postgresql.util.Utils;
 import org.springframework.stereotype.Component;
 
@@ -33,19 +31,11 @@ public class DatabaseRepository {
     
     private final PostgreSQLDatabase postgreSQLDatabase;
     
-    public void createDatabaseForInstance(String instanceId, String serviceId, String planId, String organizationGuid, String spaceGuid) throws SQLException {
+    public void createDatabaseForInstance(String instanceId) throws SQLException {
         Utils.checkValidUUID(instanceId);
         postgreSQLDatabase.executeUpdate("CREATE DATABASE \"" + instanceId + "\" ENCODING 'UTF8'");
         postgreSQLDatabase.executeUpdate("REVOKE all on database \"" + instanceId + "\" from public");
-
-        Map<Integer, String> parameterMap = new HashMap<Integer, String>();
-        parameterMap.put(1, instanceId);
-        parameterMap.put(2, serviceId);
-        parameterMap.put(3, planId);
-        parameterMap.put(4, organizationGuid);
-        parameterMap.put(5, spaceGuid);
-
-        postgreSQLDatabase.executePreparedUpdate("INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES (?, ?, ?, ?, ?)", parameterMap);
+        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + instanceId + "\"");
     }
 
     public void deleteDatabase(String instanceId) throws SQLException {
@@ -68,24 +58,6 @@ public class DatabaseRepository {
         postgreSQLDatabase.executePreparedSelect("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()", parameterMap);
         postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + instanceId + "\" OWNER TO \"" + currentUser + "\"");
         postgreSQLDatabase.executeUpdate("DROP DATABASE IF EXISTS \"" + instanceId + "\"");
-        postgreSQLDatabase.executePreparedUpdate("DELETE FROM service WHERE serviceinstanceid=?", parameterMap);
-    }
-
-    public ServiceInstance findServiceInstance(String instanceId) throws SQLException {
-        Utils.checkValidUUID(instanceId);
-
-        Map<Integer, String> parameterMap = new HashMap<Integer, String>();
-        parameterMap.put(1, instanceId);
-
-        Map<String, String> result = postgreSQLDatabase.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", parameterMap);
-
-        String serviceDefinitionId = result.get("servicedefinitionid");
-        String organizationGuid = result.get("organizationguid");
-        String planId = result.get("planid");
-        String spaceGuid = result.get("spaceguid");
-
-        CreateServiceInstanceRequest wrapper = new CreateServiceInstanceRequest(serviceDefinitionId, planId, organizationGuid, spaceGuid).withServiceInstanceId(instanceId);
-        return new ServiceInstance(wrapper);
     }
 
     public int getDatabasePort() {
