@@ -8,7 +8,7 @@ import org.cloudfoundry.community.servicebroker.ServiceBrokerV2IntegrationTestBa
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
 import org.cloudfoundry.community.servicebroker.postgresql.config.Application;
 import org.cloudfoundry.community.servicebroker.postgresql.config.BrokerConfiguration;
-import org.cloudfoundry.community.servicebroker.postgresql.service.PostgreSQLDatabase;
+import org.cloudfoundry.community.servicebroker.postgresql.repository.PostgreSQLDatabase;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -44,7 +44,7 @@ public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2In
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        conn = DriverManager.getConnection(this.jdbcUrl);
+        conn = DriverManager.getConnection(jdbcUrl);
     }
 
     /**

@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cloudfoundry.community.servicebroker.postgresql.service;
+package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.AllArgsConstructor;
+import org.cloudfoundry.community.servicebroker.postgresql.util.Utils;
 import org.springframework.stereotype.Component;
 
 import java.math.BigInteger;
@@ -24,7 +25,7 @@ import java.sql.SQLException;
 
 @Component
 @AllArgsConstructor
-public class Role {
+public class RoleRepository {
 
     private final PostgreSQLDatabase postgreSQLDatabase;
 

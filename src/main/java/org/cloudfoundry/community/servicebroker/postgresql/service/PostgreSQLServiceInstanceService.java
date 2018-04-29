@@ -15,6 +15,7 @@
  */
 package org.cloudfoundry.community.servicebroker.postgresql.service;
 
+import lombok.AllArgsConstructor;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceDoesNotExistException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceExistsException;
@@ -23,6 +24,8 @@ import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceReque
 import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.model.UpdateServiceInstanceRequest;
+import org.cloudfoundry.community.servicebroker.postgresql.repository.DatabaseRepository;
+import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleRepository;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,19 +35,14 @@ import org.springframework.stereotype.Service;
 import java.sql.SQLException;
 
 @Service
+@AllArgsConstructor
 public class PostgreSQLServiceInstanceService implements ServiceInstanceService {
 
     private static final Logger logger = LoggerFactory.getLogger(PostgreSQLServiceInstanceService.class);
 
-    private final Database db;
+    private final DatabaseRepository databaseRepository;
+    private final RoleRepository roleRepository;
 
-    private final Role role;
-
-    @Autowired
-    public PostgreSQLServiceInstanceService(Database db, Role role) {
-        this.db = db;
-        this.role = role;
-    }
 
     @Override
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
@@ -55,8 +53,8 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
         String organizationGuid = createServiceInstanceRequest.getOrganizationGuid();
         String spaceGuid = createServiceInstanceRequest.getSpaceGuid();
         try {
-            db.createDatabaseForInstance(serviceInstanceId, serviceId, planId, organizationGuid, spaceGuid);
-            role.createRoleForInstance(serviceInstanceId);
+            databaseRepository.createDatabaseForInstance(serviceInstanceId, serviceId, planId, organizationGuid, spaceGuid);
+            roleRepository.createRoleForInstance(serviceInstanceId);
         } catch (SQLException e) {
             logger.error("Error while creating service instance '" + serviceInstanceId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
@@ -71,8 +69,8 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
         ServiceInstance instance = getServiceInstance(serviceInstanceId);
 
         try {
-            db.deleteDatabase(serviceInstanceId);
-            role.deleteRole(serviceInstanceId);
+            databaseRepository.deleteDatabase(serviceInstanceId);
+            roleRepository.deleteRole(serviceInstanceId);
         } catch (SQLException e) {
             logger.error("Error while deleting service instance '" + serviceInstanceId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
@@ -89,7 +87,7 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
     @Override
     public ServiceInstance getServiceInstance(String id) {
         try {
-            return db.findServiceInstance(id);
+            return databaseRepository.findServiceInstance(id);
         } catch (SQLException e) {
             logger.error("Error while finding service instance '" + id + "'", e);
             return null;

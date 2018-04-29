@@ -54,7 +54,7 @@ public class BrokerConfiguration {
     @SneakyThrows
     @Bean
     public Connection jdbc() {
-        Connection conn = DriverManager.getConnection(this.jdbcUrl);
+        Connection conn = DriverManager.getConnection(jdbcUrl);
 
         String serviceTable = "CREATE TABLE IF NOT EXISTS service (serviceinstanceid varchar(200) not null default '',"
                 + " servicedefinitionid varchar(200) not null default '',"

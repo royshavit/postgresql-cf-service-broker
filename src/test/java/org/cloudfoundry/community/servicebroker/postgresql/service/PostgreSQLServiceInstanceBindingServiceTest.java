@@ -3,6 +3,9 @@ package org.cloudfoundry.community.servicebroker.postgresql.service;
 import lombok.SneakyThrows;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
+import org.cloudfoundry.community.servicebroker.postgresql.repository.DatabaseRepository;
+import org.cloudfoundry.community.servicebroker.postgresql.repository.PostgreSQLDatabase;
+import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleRepository;
 import org.junit.Test;
 import org.postgresql.jdbc4.Jdbc4Connection;
 
@@ -35,11 +38,11 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
     public void createServiceInstanceBinding() {
         String uri = "postgres://00000000-0000-0001-0000-000000000001:secret@db.com:123/00000000-0000-0001-0000-000000000001";
         PostgreSQLDatabase postgreSQLDatabase = postgreSQLDatabase(uri);
-        Role role = spy(new Role(postgreSQLDatabase));
+        RoleRepository roleRepository = spy(new RoleRepository(postgreSQLDatabase));
         String password = "secret";
-        doReturn(password).when(role).bindRoleToDatabase(anyString());
+        doReturn(password).when(roleRepository).bindRoleToDatabase(anyString());
         PostgreSQLServiceInstanceBindingService bindingService
-                = new PostgreSQLServiceInstanceBindingService(new Database(postgreSQLDatabase), role);
+                = new PostgreSQLServiceInstanceBindingService(new DatabaseRepository(postgreSQLDatabase), roleRepository);
         String instanceId = new UUID(1, 1).toString();
         CreateServiceInstanceBindingRequest bindingRequest
                 = new CreateServiceInstanceBindingRequest("pg", "free", "appguid")

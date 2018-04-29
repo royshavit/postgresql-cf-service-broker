@@ -1,9 +1,8 @@
-package org.cloudfoundry.community.servicebroker.postgresql.service;
+package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import org.postgresql.jdbc4.Jdbc4Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -23,7 +22,6 @@ public class PostgreSQLDatabase {
     private final String username;
     
 
-    @Autowired
     public PostgreSQLDatabase(Connection conn) {
         this.conn = conn;
 
