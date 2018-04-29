@@ -16,6 +16,7 @@
 package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -34,7 +36,7 @@ public class ServiceInstanceRepository {
     private final PostgreSQLDatabase postgreSQLDatabase;
 
     public void save(CreateServiceInstanceRequest createServiceInstanceRequest) throws SQLException {
-        Map<Integer, String> parameterMap = new HashMap<Integer, String>();
+        Map<Integer, String> parameterMap = new HashMap<>();
         parameterMap.put(1, createServiceInstanceRequest.getServiceInstanceId());
         parameterMap.put(2, createServiceInstanceRequest.getServiceDefinitionId());
         parameterMap.put(3, createServiceInstanceRequest.getPlanId());
@@ -49,20 +51,23 @@ public class ServiceInstanceRepository {
         postgreSQLDatabase.executePreparedUpdate("DELETE FROM service WHERE serviceinstanceid=?", parameterMap);
     }
 
-    public ServiceInstance findServiceInstance(UUID instanceId) throws SQLException {
-        Map<Integer, String> parameterMap = new HashMap<Integer, String>();
+    @SneakyThrows
+    public Optional<ServiceInstance> findServiceInstance(UUID instanceId) {
+        Map<Integer, String> parameterMap = new HashMap<>();
         parameterMap.put(1, instanceId.toString());
         Map<String, String> result = postgreSQLDatabase.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", parameterMap);
-
-        String serviceDefinitionId = result.get("servicedefinitionid");
-        String organizationGuid = result.get("organizationguid");
-        String planId = result.get("planid");
-        String spaceGuid = result.get("spaceguid");
-
-        CreateServiceInstanceRequest wrapper
-                = new CreateServiceInstanceRequest(serviceDefinitionId, planId, organizationGuid, spaceGuid)
-                .withServiceInstanceId(instanceId.toString());
-        return new ServiceInstance(wrapper);
+        if (result.isEmpty()) {
+            return Optional.empty();
+        } else {
+            String serviceDefinitionId = result.get("servicedefinitionid");
+            String organizationGuid = result.get("organizationguid");
+            String planId = result.get("planid");
+            String spaceGuid = result.get("spaceguid");
+            CreateServiceInstanceRequest wrapper
+                    = new CreateServiceInstanceRequest(serviceDefinitionId, planId, organizationGuid, spaceGuid)
+                    .withServiceInstanceId(instanceId.toString());
+            return Optional.of(new ServiceInstance(wrapper));
+        }
     }
 
 }

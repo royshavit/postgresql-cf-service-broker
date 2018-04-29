@@ -16,6 +16,7 @@
 package org.cloudfoundry.community.servicebroker.postgresql.service;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceDoesNotExistException;
@@ -32,6 +33,7 @@ import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -63,8 +65,13 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
     public ServiceInstance deleteServiceInstance(DeleteServiceInstanceRequest deleteServiceInstanceRequest)
             throws ServiceBrokerException {
         UUID serviceInstanceId = UUID.fromString(deleteServiceInstanceRequest.getServiceInstanceId());
-        ServiceInstance instance = getServiceInstance(serviceInstanceId);
+        Optional<ServiceInstance> instance = getServiceInstance(serviceInstanceId);
+        instance.ifPresent(serviceInstance -> deleteServiceInstance(serviceInstanceId));
+        return instance.orElse(null);
+    }
 
+    @SneakyThrows
+    private void deleteServiceInstance(UUID serviceInstanceId) {
         try {
             serviceInstanceRepository.deleteDatabase(serviceInstanceId);
             databaseRepository.deleteDatabase(serviceInstanceId);
@@ -73,7 +80,6 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
             log.error("Error while deleting service instance '" + serviceInstanceId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
         }
-        return instance;
     }
 
     @Override
@@ -84,15 +90,11 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
 
     @Override
     public ServiceInstance getServiceInstance(String id) {
-        return getServiceInstance(UUID.fromString(id));
+        return getServiceInstance(UUID.fromString(id)).orElse(null);
     }
-    
-    private ServiceInstance getServiceInstance(UUID id) {
-        try {
-            return serviceInstanceRepository.findServiceInstance(id);
-        } catch (SQLException e) {
-            log.error("Error while finding service instance '" + id + "'", e);
-            return null;
-        }
+
+    private Optional<ServiceInstance> getServiceInstance(UUID id) {
+        return serviceInstanceRepository.findServiceInstance(id);
     }
+
 }
