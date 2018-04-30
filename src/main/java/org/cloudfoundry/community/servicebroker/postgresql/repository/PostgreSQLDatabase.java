@@ -2,7 +2,6 @@ package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.postgresql.jdbc4.Jdbc4Connection;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -35,7 +34,7 @@ public class PostgreSQLDatabase {
             URI uri = new URI(cleanJdbcUrl);
             databaseHost = uri.getHost();
             databasePort = uri.getPort() == -1 ? 5432 : uri.getPort();
-            username = ((Jdbc4Connection) conn).getUserName();
+            username = conn.getMetaData().getUserName();
         } catch (SQLException e) {
             throw new IllegalStateException("Unable to get DatabaseMetadata from Connection", e);
         } catch (URISyntaxException e) {

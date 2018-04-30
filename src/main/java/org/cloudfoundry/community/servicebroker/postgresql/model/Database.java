@@ -11,6 +11,6 @@ import java.util.UUID;
 public class Database {
     private final String host;
     private final int port;
-    private final UUID name;
+    private final String name;
 
 }

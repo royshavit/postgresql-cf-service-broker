@@ -24,7 +24,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @Component
 @Slf4j
@@ -33,15 +32,15 @@ public class DatabaseRepository {
     
     private final PostgreSQLDatabase postgreSQLDatabase;
     
-    public void save(UUID databaseName, UUID owner) throws SQLException {
+    public void create(String databaseName, String owner) throws SQLException {
         postgreSQLDatabase.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
         postgreSQLDatabase.executeUpdate("REVOKE all on database \"" + databaseName + "\" from public");
         postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + owner + "\"");
     }
 
-    public void delete(UUID databaseName) throws SQLException {
+    public void delete(String databaseName) throws SQLException {
         Map<Integer, String> parameterMap = new HashMap<>();
-        parameterMap.put(1, databaseName.toString());
+        parameterMap.put(1, databaseName);
 
         Map<String, String> result = postgreSQLDatabase.executeSelect("SELECT current_user");
         String currentUser = null;
@@ -59,9 +58,9 @@ public class DatabaseRepository {
         postgreSQLDatabase.executeUpdate("DROP DATABASE IF EXISTS \"" + databaseName + "\"");
     }
 
-    public Optional<Database> findOne(UUID databaseName) throws SQLException {
+    public Optional<Database> findOne(String databaseName) throws SQLException {
         Map<Integer, String> parameterMap = new HashMap<>();
-        parameterMap.put(1, databaseName.toString());
+        parameterMap.put(1, databaseName);
         Map<String, String> result = postgreSQLDatabase.executePreparedSelect("SELECT 1 FROM pg_database WHERE datname = ?", parameterMap);
         if (result.isEmpty()) {
             return Optional.empty();

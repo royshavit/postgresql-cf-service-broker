@@ -31,6 +31,7 @@ import org.springframework.context.annotation.FilterType;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Arrays;
@@ -66,6 +67,12 @@ public class BrokerConfiguration {
         return conn;
     }
 
+    @SneakyThrows
+    @Bean
+    DatabaseMetaData masterDatabaseMetaData() {
+        return jdbc().getMetaData();
+    }
+    
     @Bean
     public Catalog catalog() throws IOException {
         ServiceDefinition serviceDefinition = new ServiceDefinition(

@@ -32,6 +32,7 @@ import org.cloudfoundry.community.servicebroker.postgresql.repository.ServiceIns
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
 import org.springframework.stereotype.Service;
 
+import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
@@ -44,15 +45,16 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
     private final DatabaseRepository databaseRepository;
     private final RoleRepository roleRepository;
     private final ServiceInstanceRepository serviceInstanceRepository;
-
+    private final DatabaseMetaData masterDatabaseMetaData;
 
     @Override
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
             throws ServiceInstanceExistsException, ServiceBrokerException {
         UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
         try {
-            roleRepository.createRoleForInstance(serviceInstanceId);
-            databaseRepository.save(serviceInstanceId, serviceInstanceId);
+            roleRepository.create(serviceInstanceId.toString());
+            roleRepository.grantRoleTo(serviceInstanceId.toString(), masterDatabaseMetaData.getUserName());
+            databaseRepository.create(serviceInstanceId.toString(), serviceInstanceId.toString());
             serviceInstanceRepository.save(createServiceInstanceRequest);
         } catch (SQLException e) {
             log.error("Error while creating service instance '" + serviceInstanceId + "'", e);
@@ -74,8 +76,8 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
     private void deleteServiceInstance(UUID serviceInstanceId) {
         try {
             serviceInstanceRepository.delete(serviceInstanceId);
-            databaseRepository.delete(serviceInstanceId);
-            roleRepository.deleteRole(serviceInstanceId);
+            databaseRepository.delete(serviceInstanceId.toString());
+            roleRepository.delete(serviceInstanceId.toString());
         } catch (SQLException e) {
             log.error("Error while deleting service instance '" + serviceInstanceId + "'", e);
             throw new ServiceBrokerException(e.getMessage());

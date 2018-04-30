@@ -18,10 +18,7 @@ package org.cloudfoundry.community.servicebroker.postgresql.repository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.sql.SQLException;
-import java.util.UUID;
 
 @Component
 @AllArgsConstructor
@@ -29,24 +26,24 @@ public class RoleRepository {
 
     private final PostgreSQLDatabase postgreSQLDatabase;
 
-    public void createRoleForInstance(UUID instanceId) throws SQLException {
-        postgreSQLDatabase.executeUpdate("CREATE ROLE \"" + instanceId + "\"");
-        postgreSQLDatabase.executeUpdate("GRANT \"" + postgreSQLDatabase.getUsername() + "\" TO \"" + instanceId + "\"");
+    public void create(String name) throws SQLException {
+        postgreSQLDatabase.executeUpdate("CREATE ROLE \"" + name + "\"");
     }
 
-    public void deleteRole(UUID instanceId) throws SQLException {
-        postgreSQLDatabase.executeUpdate("DROP ROLE IF EXISTS \"" + instanceId + "\"");
+    public void delete(String name) throws SQLException {
+        postgreSQLDatabase.executeUpdate("DROP ROLE IF EXISTS \"" + name + "\"");
     }
 
-    public String bindRoleToDatabase(UUID dbInstanceId) throws SQLException {
-        SecureRandom random = new SecureRandom();
-        String passwd = new BigInteger(130, random).toString(32);
-
-        postgreSQLDatabase.executeUpdate("ALTER ROLE \"" + dbInstanceId + "\" LOGIN password '" + passwd + "'");
-        return passwd;
+    public void setPassword(String roleName, String password) throws SQLException {
+        postgreSQLDatabase.executeUpdate("ALTER ROLE \"" + roleName + "\" LOGIN password '" + password + "'");
     }
 
-    public void unBindRoleFromDatabase(UUID dbInstanceId) throws SQLException{
-        postgreSQLDatabase.executeUpdate("ALTER ROLE \"" + dbInstanceId + "\" NOLOGIN");
+    public void unsetPassword(String roleName) throws SQLException{
+        postgreSQLDatabase.executeUpdate("ALTER ROLE \"" + roleName + "\" NOLOGIN");
     }
+
+    public void grantRoleTo(String roleMember, String roleGroup) throws SQLException {
+        postgreSQLDatabase.executeUpdate("GRANT \"" + roleGroup + "\" TO \"" + roleMember + "\"");
+    }
+
 }

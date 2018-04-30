@@ -16,7 +16,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
+import static org.hamcrest.text.MatchesPattern.*;
 
 /**
  * Created by taitz.
@@ -36,12 +38,11 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
     @SneakyThrows
     @Test
     public void createServiceInstanceBinding() {
-        String uri = "postgres://00000000-0000-0001-0000-000000000001:secret@db.com:123/00000000-0000-0001-0000-000000000001";
-        PostgreSQLDatabase postgreSQLDatabase = postgreSQLDatabase(uri);
+        String masterUri = "postgres://master-user:secret@db.com:123/master-db";
+        PostgreSQLDatabase postgreSQLDatabase = postgreSQLDatabase(masterUri);
         doReturn(ImmutableMap.of("", "")).when(postgreSQLDatabase).executePreparedSelect(anyString(), any());
         RoleRepository roleRepository = spy(new RoleRepository(postgreSQLDatabase));
-        String password = "secret";
-        doReturn(password).when(roleRepository).bindRoleToDatabase(any());
+        doNothing().when(roleRepository).setPassword(anyString(), anyString());
         PostgreSQLServiceInstanceBindingService bindingService
                 = new PostgreSQLServiceInstanceBindingService(new DatabaseRepository(postgreSQLDatabase), roleRepository);
         UUID instanceId = new UUID(1, 1);
@@ -53,12 +54,12 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
         ServiceInstanceBinding binding = bindingService.createServiceInstanceBinding(bindingRequest);
 
         Map<String, Object> credentials = binding.getCredentials();
-        assertEquals(uri, credentials.get("uri"));
-        assertEquals(instanceId, credentials.get("database"));
+        assertEquals(instanceId.toString(), credentials.get("database"));
         assertEquals("db.com", credentials.get("hostname"));
-        assertEquals(password, credentials.get("password"));
         assertEquals(123, credentials.get("port"));
         assertEquals(instanceId, credentials.get("username"));
+        String expectedUri = "postgres://00000000-0000-0001-0000-000000000001:.*@db.com:123/00000000-0000-0001-0000-000000000001";
+        assertThat(credentials.get("uri").toString(), matchesPattern(expectedUri));
     }
 
 }

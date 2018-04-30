@@ -28,6 +28,8 @@ import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleReposi
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
 import org.springframework.stereotype.Service;
 
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,25 +50,27 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
         UUID bindingId = UUID.fromString(createServiceInstanceBindingRequest.getBindingId());
         UUID serviceInstanceId = UUID.fromString(createServiceInstanceBindingRequest.getServiceInstanceId());
         UUID appGuid = UUID.fromString(createServiceInstanceBindingRequest.getAppGuid());
-        String passwd;
+        SecureRandom random = new SecureRandom();
+        String password = new BigInteger(130, random).toString(32);
+
         Database database;
 
         try {
-            database = databaseRepository.findOne(serviceInstanceId)
+            database = databaseRepository.findOne(serviceInstanceId.toString())
                     .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + serviceInstanceId));
-            passwd = roleRepository.bindRoleToDatabase(serviceInstanceId);
+            roleRepository.setPassword(serviceInstanceId.toString(), password);
         } catch (SQLException e) {
             log.error("Error while creating service instance binding '" + bindingId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
         }
 
-        String dbURL = String.format("postgres://%s:%s@%s:%d/%s", serviceInstanceId, passwd, database.getHost(),
+        String dbURL = String.format("postgres://%s:%s@%s:%d/%s", serviceInstanceId, password, database.getHost(),
                 database.getPort(), database.getName());
 
         Map<String, Object> credentials = new HashMap<>();
         credentials.put("uri", dbURL);
         credentials.put("username", serviceInstanceId);
-        credentials.put("password", passwd);
+        credentials.put("password", password);
         credentials.put("hostname", database.getHost());
         credentials.put("port", database.getPort());
         credentials.put("database", database.getName());
@@ -80,7 +84,7 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
         UUID serviceInstanceId = UUID.fromString(deleteServiceInstanceBindingRequest.getInstance().getServiceInstanceId());
         UUID bindingId = UUID.fromString(deleteServiceInstanceBindingRequest.getBindingId());
         try {
-            roleRepository.unBindRoleFromDatabase(serviceInstanceId);
+            roleRepository.unsetPassword(serviceInstanceId.toString());
         } catch (SQLException e) {
             log.error("Error while deleting service instance binding '" + bindingId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
