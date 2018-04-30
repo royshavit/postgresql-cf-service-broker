@@ -4,12 +4,11 @@ import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
+import org.cloudfoundry.community.servicebroker.postgresql.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.DatabaseRepository;
-import org.cloudfoundry.community.servicebroker.postgresql.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleRepository;
 import org.junit.Test;
-import org.postgresql.jdbc4.Jdbc4Connection;
 
 import javax.sql.DataSource;
 import java.security.SecureRandom;
@@ -32,7 +31,7 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
     @SneakyThrows
     private QueryExecutor queryExecutor() {
         DatabaseMetaData metaData = mock(DatabaseMetaData.class);
-        Connection connection = mock(Jdbc4Connection.class);
+        Connection connection = mock(Connection.class);
         when(connection.getMetaData()).thenReturn(metaData);
         when(connection.createStatement()).thenReturn(mock(Statement.class));
         DataSource dataSource = mock(DataSource.class);
