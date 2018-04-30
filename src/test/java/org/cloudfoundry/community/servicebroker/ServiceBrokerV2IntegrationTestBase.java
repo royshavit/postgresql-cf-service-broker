@@ -4,7 +4,7 @@ import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Header;
 import org.apache.http.HttpStatus;
-import org.cloudfoundry.community.servicebroker.postgresql.config.BrokerConfiguration;
+import org.cloudfoundry.community.servicebroker.postgresql.config.CatalogConfig;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -72,7 +72,7 @@ public abstract class ServiceBrokerV2IntegrationTestBase {
 
     protected final String createOrRemoveBindingBasePath = "/v2/service_instances/%s/service_bindings/%s";
 
-    protected final Header apiVersionHeader = new Header("X-Broker-Api-Version", BrokerConfiguration.BROKER_API_VERSION);
+    protected final Header apiVersionHeader = new Header("X-Broker-Api-Version", CatalogConfig.BROKER_API_VERSION);
     
     @PostConstruct
     public void init() {

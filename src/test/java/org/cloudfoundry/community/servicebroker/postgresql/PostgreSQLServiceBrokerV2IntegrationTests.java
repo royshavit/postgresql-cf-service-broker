@@ -7,7 +7,8 @@ import org.apache.http.HttpStatus;
 import org.cloudfoundry.community.servicebroker.ServiceBrokerV2IntegrationTestBase;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
 import org.cloudfoundry.community.servicebroker.postgresql.config.Application;
-import org.cloudfoundry.community.servicebroker.postgresql.config.BrokerConfiguration;
+import org.cloudfoundry.community.servicebroker.postgresql.config.BrokerConfig;
+import org.cloudfoundry.community.servicebroker.postgresql.config.CatalogConfig;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.PostgreSQLDatabase;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -69,8 +70,8 @@ public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2In
         // same as super code, but we need the response here
         ValidatableResponse response = given().auth().basic(username, password).header(apiVersionHeader).when().get(fetchCatalogPath).then().statusCode(HttpStatus.SC_OK);
 
-        BrokerConfiguration brokerConfiguration = new BrokerConfiguration();
-        ServiceDefinition serviceDefinition = brokerConfiguration.catalog().getServiceDefinitions().get(0);
+        CatalogConfig catalogConfig = new CatalogConfig();
+        ServiceDefinition serviceDefinition = catalogConfig.catalog().getServiceDefinitions().get(0);
 
         response.body("services[0].id", equalTo("pg-" + spaceName));
         response.body("services[0].name", equalTo("pgshared-" + spaceName));

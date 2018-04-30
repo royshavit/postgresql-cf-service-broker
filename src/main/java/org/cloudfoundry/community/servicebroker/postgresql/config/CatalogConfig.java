@@ -15,64 +15,33 @@
  */
 package org.cloudfoundry.community.servicebroker.postgresql.config;
 
-import lombok.SneakyThrows;
-import org.cloudfoundry.community.servicebroker.config.BrokerApiVersionConfig;
 import org.cloudfoundry.community.servicebroker.model.BrokerApiVersion;
 import org.cloudfoundry.community.servicebroker.model.Catalog;
 import org.cloudfoundry.community.servicebroker.model.Plan;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
 
-import javax.sql.DataSource;
 import java.io.IOException;
-import java.security.SecureRandom;
-import java.sql.Connection;
 import java.util.*;
 
 @Configuration
-@ComponentScan(basePackages = "org.cloudfoundry.community.servicebroker", excludeFilters = { @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = BrokerApiVersionConfig.class) })
-public class BrokerConfiguration {
+public class CatalogConfig {
 
     public static final String BROKER_API_VERSION = "2.12";
-
-    @Value("${MASTER_JDBC_URL}")
-    private String jdbcUrl;
 
     @Value("${space.name}")
     private String spaceName;
 
-    @SneakyThrows
-    @Autowired
-    public void createServiceInstanceTable(DataSource dataSource) {
-        try (Connection connection = dataSource.getConnection()) {
-            String createServiceInstanceTable
-                    = "CREATE TABLE IF NOT EXISTS service (serviceinstanceid varchar(200) not null default '',"
-                    + " servicedefinitionid varchar(200) not null default '',"
-                    + " planid varchar(200) not null default '',"
-                    + " organizationguid varchar(200) not null default '',"
-                    + " spaceguid varchar(200) not null default '')";
-            connection.createStatement().execute(createServiceInstanceTable);
-        }
-    }
-
-    @Bean
-    Random random() {
-        return new SecureRandom();
-    }
-    
     @Bean
     public Catalog catalog() throws IOException {
         ServiceDefinition serviceDefinition = new ServiceDefinition(
                 "pg-" + spaceName,
                 "pgshared-" + spaceName,
                 "PostgreSQL on shared instance.",
-                true, false, getPlans(), getTags(), getServiceDefinitionMetadata(), Arrays.asList("syslog_drain"), null);
-        return new Catalog(Arrays.asList(serviceDefinition));
+                true, false, getPlans(), getTags(), getServiceDefinitionMetadata(), Collections.singletonList("syslog_drain"), null);
+        return new Catalog(Collections.singletonList(serviceDefinition));
     }
 
     private static List<String> getTags() {
@@ -80,7 +49,7 @@ public class BrokerConfiguration {
     }
 
     private static Map<String, Object> getServiceDefinitionMetadata() {
-        Map<String, Object> sdMetadata = new HashMap<String, Object>();
+        Map<String, Object> sdMetadata = new HashMap<>();
         sdMetadata.put("displayName", "PostgreSQL");
         sdMetadata.put("imageUrl", "https://wiki.postgresql.org/images/3/30/PostgreSQL_logo.3colors.120x120.png");
         sdMetadata.put("longDescription", "PostgreSQL Service");
@@ -94,11 +63,11 @@ public class BrokerConfiguration {
         Plan basic = new Plan("free-" + spaceName, "free",
                 "A PG plan providing a single database on a shared instance with limited storage.",
                 getBasicPlanMetadata(), true);
-        return Arrays.asList(basic);
+        return Collections.singletonList(basic);
     }
 
     private static Map<String, Object> getBasicPlanMetadata() {
-        Map<String, Object> planMetadata = new HashMap<String, Object>();
+        Map<String, Object> planMetadata = new HashMap<>();
         planMetadata.put("bullets", getBasicPlanBullets());
         return planMetadata;
     }
