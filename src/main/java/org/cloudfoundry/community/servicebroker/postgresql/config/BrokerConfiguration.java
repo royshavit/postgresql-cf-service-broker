@@ -21,17 +21,17 @@ import org.cloudfoundry.community.servicebroker.model.BrokerApiVersion;
 import org.cloudfoundry.community.servicebroker.model.Catalog;
 import org.cloudfoundry.community.servicebroker.model.Plan;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.util.*;
 
 @Configuration
@@ -47,25 +47,17 @@ public class BrokerConfiguration {
     private String spaceName;
 
     @SneakyThrows
-    @Bean
-    public Connection jdbc() {
-        Connection conn = DriverManager.getConnection(jdbcUrl);
-
-        String serviceTable = "CREATE TABLE IF NOT EXISTS service (serviceinstanceid varchar(200) not null default '',"
-                + " servicedefinitionid varchar(200) not null default '',"
-                + " planid varchar(200) not null default '',"
-                + " organizationguid varchar(200) not null default '',"
-                + " spaceguid varchar(200) not null default '')";
-
-        Statement createServiceTable = conn.createStatement();
-        createServiceTable.execute(serviceTable);
-        return conn;
-    }
-
-    @SneakyThrows
-    @Bean
-    String masterUser() {
-        return jdbc().getMetaData().getUserName();
+    @Autowired
+    public void createServiceInstanceTable(DataSource dataSource) {
+        try (Connection connection = dataSource.getConnection()) {
+            String createServiceInstanceTable
+                    = "CREATE TABLE IF NOT EXISTS service (serviceinstanceid varchar(200) not null default '',"
+                    + " servicedefinitionid varchar(200) not null default '',"
+                    + " planid varchar(200) not null default '',"
+                    + " organizationguid varchar(200) not null default '',"
+                    + " spaceguid varchar(200) not null default '')";
+            connection.createStatement().execute(createServiceInstanceTable);
+        }
     }
 
     @Bean

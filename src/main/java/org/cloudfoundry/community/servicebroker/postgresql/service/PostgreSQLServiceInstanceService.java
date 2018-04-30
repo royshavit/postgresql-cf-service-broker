@@ -26,6 +26,7 @@ import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceReque
 import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.model.UpdateServiceInstanceRequest;
+import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.DatabaseRepository;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleRepository;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.ServiceInstanceRepository;
@@ -44,7 +45,7 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
     private final DatabaseRepository databaseRepository;
     private final RoleRepository roleRepository;
     private final ServiceInstanceRepository serviceInstanceRepository;
-    private final String masterUser;
+    private final Database masterDatabaseUrl;
 
     @Override
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
@@ -52,7 +53,7 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
         UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
         try {
             roleRepository.create(serviceInstanceId.toString());
-            roleRepository.grantRoleTo(serviceInstanceId.toString(), masterUser);
+            roleRepository.grantRoleTo(serviceInstanceId.toString(), masterDatabaseUrl.getOwner());
             databaseRepository.create(serviceInstanceId.toString(), serviceInstanceId.toString());
             serviceInstanceRepository.save(createServiceInstanceRequest);
         } catch (SQLException e) {

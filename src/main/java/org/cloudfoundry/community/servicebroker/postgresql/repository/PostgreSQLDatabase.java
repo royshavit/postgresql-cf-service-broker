@@ -1,118 +1,76 @@
 package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
-import lombok.Getter;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
+
 @Slf4j
 @Component
+@AllArgsConstructor
 public class PostgreSQLDatabase {
 
-    private final Connection conn;
-    @Getter
-    private final String databaseHost;
-    @Getter
-    private final int databasePort;
-    @Getter
-    private final String username;
-    
-
-    public PostgreSQLDatabase(Connection conn) {
-        this.conn = conn;
-
-        try {
-            String jdbcUrl = conn.getMetaData().getURL();
-            // Remove "jdbc:" prefix from the connection JDBC URL to create an URI out of it.
-            String cleanJdbcUrl = jdbcUrl.replace("jdbc:", "");
-
-            URI uri = new URI(cleanJdbcUrl);
-            databaseHost = uri.getHost();
-            databasePort = uri.getPort() == -1 ? 5432 : uri.getPort();
-            username = conn.getMetaData().getUserName();
-        } catch (SQLException e) {
-            throw new IllegalStateException("Unable to get DatabaseMetadata from Connection", e);
-        } catch (URISyntaxException e) {
-            throw new IllegalStateException("Unable to parse JDBC URI for Database Connection", e);
-        }
-    }
+    private final DataSource dataSource;
 
 
     public void executeUpdate(String query) throws SQLException {
-        Statement statement = conn.createStatement();
-
-        try {
-            statement.execute(query);
-        } finally {
-            statement.close();
+        try (Connection connection = dataSource.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute(query);
+            }
         }
     }
 
     public Map<String, String> executeSelect(String query) throws SQLException {
-        Statement statement = conn.createStatement();
-
-        try {
-            ResultSet result = statement.executeQuery(query);
-            return getResultMapFromResultSet(result);
-        } finally {
-            statement.close();
+        try (Connection connection = dataSource.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                ResultSet result = statement.executeQuery(query);
+                return getResultMapFromResultSet(result);
+            }
         }
     }
 
     public void executePreparedUpdate(String query, Map<Integer, String> parameterMap) throws SQLException {
-        if(parameterMap == null) {
-            throw new IllegalStateException("parameterMap cannot be null");
-        }
-
-        PreparedStatement preparedStatement = conn.prepareStatement(query);
-
-        for(Map.Entry<Integer, String> parameter : parameterMap.entrySet()) {
-            preparedStatement.setString(parameter.getKey(), parameter.getValue());
-        }
-
-        try {
-            preparedStatement.executeUpdate();
-        } finally {
-            preparedStatement.close();
+        requireNonNull(parameterMap);
+        try (Connection connection = dataSource.getConnection()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                for (Map.Entry<Integer, String> parameter : parameterMap.entrySet()) {
+                    preparedStatement.setString(parameter.getKey(), parameter.getValue());
+                }
+                preparedStatement.executeUpdate();
+            }
         }
     }
 
     public Map<String, String> executePreparedSelect(String query, Map<Integer, String> parameterMap) throws SQLException {
-        if(parameterMap == null) {
-            throw new IllegalStateException("parameterMap cannot be null");
-        }
-
-        PreparedStatement preparedStatement = conn.prepareStatement(query);
-
-        for(Map.Entry<Integer, String> parameter : parameterMap.entrySet()) {
-            preparedStatement.setString(parameter.getKey(), parameter.getValue());
-        }
-
-        try {
-            ResultSet result = preparedStatement.executeQuery();
-            return getResultMapFromResultSet(result);
-        } finally {
-            preparedStatement.close();
+        requireNonNull(parameterMap);
+        try (Connection connection = dataSource.getConnection()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                for (Map.Entry<Integer, String> parameter : parameterMap.entrySet()) {
+                    preparedStatement.setString(parameter.getKey(), parameter.getValue());
+                }
+                ResultSet result = preparedStatement.executeQuery();
+                return getResultMapFromResultSet(result);
+            }
         }
     }
 
     private static Map<String, String> getResultMapFromResultSet(ResultSet result) throws SQLException {
         ResultSetMetaData resultMetaData = result.getMetaData();
-        int columns = resultMetaData.getColumnCount();
-
-        Map<String, String> resultMap = new HashMap<String, String>(columns);
-
-        if(result.next()) {
-            for(int i = 1; i <= columns; i++) {
+        int columns = resultMetaData.getColumnCount(); 
+        Map<String, String> resultMap = new HashMap<>(columns); 
+        if (result.next()) {
+            for (int i = 1; i <= columns; i++) {
                 resultMap.put(resultMetaData.getColumnName(i), result.getString(i));
             }
-        }
-
+        } 
         return resultMap;
     }
+    
 }

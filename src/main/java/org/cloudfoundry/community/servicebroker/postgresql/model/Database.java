@@ -9,8 +9,8 @@ import java.util.UUID;
  */
 @Value
 public class Database {
-    private final String host;
-    private final int port;
-    private final String name;
-
+    String host;
+    int port;
+    String name;
+    String owner;
 }

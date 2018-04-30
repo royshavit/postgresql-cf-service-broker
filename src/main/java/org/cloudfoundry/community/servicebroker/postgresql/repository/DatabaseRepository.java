@@ -32,6 +32,7 @@ import java.util.Optional;
 public class DatabaseRepository {
     
     private final PostgreSQLDatabase postgreSQLDatabase;
+    private final Database masterDatabase;
     
     public void create(String databaseName, String owner) throws SQLException {
         postgreSQLDatabase.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
@@ -63,11 +64,14 @@ public class DatabaseRepository {
     public Optional<Database> findOne(String databaseName) {
         Map<Integer, String> parameterMap = new HashMap<>();
         parameterMap.put(1, databaseName);
-        Map<String, String> result = postgreSQLDatabase.executePreparedSelect("SELECT 1 FROM pg_database WHERE datname = ?", parameterMap);
+        Map<String, String> result = postgreSQLDatabase.executePreparedSelect(
+                "SELECT d.datname, pg_catalog.pg_get_userbyid(d.datdba) AS owner FROM pg_catalog.pg_database d WHERE d.datname = ?;",
+                parameterMap);
         if (result.isEmpty()) {
             return Optional.empty();
         } else {
-            return Optional.of(new Database(postgreSQLDatabase.getDatabaseHost(), postgreSQLDatabase.getDatabasePort(), databaseName));
+            String owner = result.get("owner");
+            return Optional.of(new Database(masterDatabase.getHost(), masterDatabase.getPort(), databaseName, owner));
         }
     }
 
