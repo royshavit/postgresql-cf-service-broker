@@ -10,6 +10,7 @@ import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleReposi
 import org.junit.Test;
 import org.postgresql.jdbc4.Jdbc4Connection;
 
+import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.util.Map;
@@ -44,7 +45,8 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
         RoleRepository roleRepository = spy(new RoleRepository(postgreSQLDatabase));
         doNothing().when(roleRepository).setPassword(anyString(), anyString());
         PostgreSQLServiceInstanceBindingService bindingService
-                = new PostgreSQLServiceInstanceBindingService(new DatabaseRepository(postgreSQLDatabase), roleRepository);
+                = new PostgreSQLServiceInstanceBindingService(new DatabaseRepository(postgreSQLDatabase), roleRepository,
+                new SecureRandom());
         UUID instanceId = new UUID(1, 1);
         CreateServiceInstanceBindingRequest bindingRequest
                 = new CreateServiceInstanceBindingRequest("pg", "free", new UUID(1, 2).toString())
@@ -57,7 +59,7 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
         assertEquals(instanceId.toString(), credentials.get("database"));
         assertEquals("db.com", credentials.get("hostname"));
         assertEquals(123, credentials.get("port"));
-        assertEquals(instanceId, credentials.get("username"));
+        assertEquals(instanceId.toString(), credentials.get("username"));
         String expectedUri = "postgres://00000000-0000-0001-0000-000000000001:.*@db.com:123/00000000-0000-0001-0000-000000000001";
         assertThat(credentials.get("uri").toString(), matchesPattern(expectedUri));
     }

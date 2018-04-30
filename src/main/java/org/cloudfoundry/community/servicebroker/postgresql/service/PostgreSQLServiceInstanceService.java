@@ -32,7 +32,6 @@ import org.cloudfoundry.community.servicebroker.postgresql.repository.ServiceIns
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
 import org.springframework.stereotype.Service;
 
-import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,7 +44,7 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
     private final DatabaseRepository databaseRepository;
     private final RoleRepository roleRepository;
     private final ServiceInstanceRepository serviceInstanceRepository;
-    private final DatabaseMetaData masterDatabaseMetaData;
+    private final String masterUser;
 
     @Override
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
@@ -53,7 +52,7 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
         UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
         try {
             roleRepository.create(serviceInstanceId.toString());
-            roleRepository.grantRoleTo(serviceInstanceId.toString(), masterDatabaseMetaData.getUserName());
+            roleRepository.grantRoleTo(serviceInstanceId.toString(), masterUser);
             databaseRepository.create(serviceInstanceId.toString(), serviceInstanceId.toString());
             serviceInstanceRepository.save(createServiceInstanceRequest);
         } catch (SQLException e) {

@@ -29,11 +29,10 @@ import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingSe
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+import java.util.Random;
 
 @Service
 @Slf4j
@@ -42,31 +41,31 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
 
     private final DatabaseRepository databaseRepository;
     private final RoleRepository roleRepository;
-
+    private final Random random;
 
     @Override
     public ServiceInstanceBinding createServiceInstanceBinding(CreateServiceInstanceBindingRequest createServiceInstanceBindingRequest)
             throws ServiceInstanceBindingExistsException, ServiceBrokerException {
-        UUID bindingId = UUID.fromString(createServiceInstanceBindingRequest.getBindingId());
-        UUID serviceInstanceId = UUID.fromString(createServiceInstanceBindingRequest.getServiceInstanceId());
-        UUID appGuid = UUID.fromString(createServiceInstanceBindingRequest.getAppGuid());
-        SecureRandom random = new SecureRandom();
+        String serviceInstanceId = createServiceInstanceBindingRequest.getServiceInstanceId();
         String password = new BigInteger(130, random).toString(32);
-
-        Database database;
-
         try {
-            database = databaseRepository.findOne(serviceInstanceId.toString())
-                    .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + serviceInstanceId));
-            roleRepository.setPassword(serviceInstanceId.toString(), password);
+            roleRepository.setPassword(serviceInstanceId, password);
         } catch (SQLException e) {
-            log.error("Error while creating service instance binding '" + bindingId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
         }
+        return new ServiceInstanceBinding(
+                createServiceInstanceBindingRequest.getBindingId(),
+                serviceInstanceId,
+                buildCredentials(serviceInstanceId, password),
+                null,
+                createServiceInstanceBindingRequest.getAppGuid());
+    }
 
+    private Map<String, Object> buildCredentials(String serviceInstanceId, String password) {
+        Database database = databaseRepository.findOne(serviceInstanceId)
+                .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + serviceInstanceId));
         String dbURL = String.format("postgres://%s:%s@%s:%d/%s", serviceInstanceId, password, database.getHost(),
                 database.getPort(), database.getName());
-
         Map<String, Object> credentials = new HashMap<>();
         credentials.put("uri", dbURL);
         credentials.put("username", serviceInstanceId);
@@ -74,21 +73,20 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
         credentials.put("hostname", database.getHost());
         credentials.put("port", database.getPort());
         credentials.put("database", database.getName());
-
-        return new ServiceInstanceBinding(bindingId.toString(), serviceInstanceId.toString(), credentials, null, appGuid.toString());
+        return credentials;
     }
 
     @Override
     public ServiceInstanceBinding deleteServiceInstanceBinding(DeleteServiceInstanceBindingRequest deleteServiceInstanceBindingRequest)
             throws ServiceBrokerException {
-        UUID serviceInstanceId = UUID.fromString(deleteServiceInstanceBindingRequest.getInstance().getServiceInstanceId());
-        UUID bindingId = UUID.fromString(deleteServiceInstanceBindingRequest.getBindingId());
+        String serviceInstanceId = deleteServiceInstanceBindingRequest.getInstance().getServiceInstanceId();
         try {
-            roleRepository.unsetPassword(serviceInstanceId.toString());
+            roleRepository.unsetPassword(serviceInstanceId);
         } catch (SQLException e) {
-            log.error("Error while deleting service instance binding '" + bindingId + "'", e);
             throw new ServiceBrokerException(e.getMessage());
         }
-        return new ServiceInstanceBinding(bindingId.toString(), serviceInstanceId.toString(), null, null, null);
+        return new ServiceInstanceBinding(deleteServiceInstanceBindingRequest.getBindingId(), serviceInstanceId, null,
+                null, null);
     }
+    
 }

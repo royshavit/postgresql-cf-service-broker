@@ -21,8 +21,6 @@ import org.cloudfoundry.community.servicebroker.model.BrokerApiVersion;
 import org.cloudfoundry.community.servicebroker.model.Catalog;
 import org.cloudfoundry.community.servicebroker.model.Plan;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -30,14 +28,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.Statement;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Configuration
 @ComponentScan(basePackages = "org.cloudfoundry.community.servicebroker", excludeFilters = { @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = BrokerApiVersionConfig.class) })
@@ -69,8 +64,13 @@ public class BrokerConfiguration {
 
     @SneakyThrows
     @Bean
-    DatabaseMetaData masterDatabaseMetaData() {
-        return jdbc().getMetaData();
+    String masterUser() {
+        return jdbc().getMetaData().getUserName();
+    }
+
+    @Bean
+    Random random() {
+        return new SecureRandom();
     }
     
     @Bean

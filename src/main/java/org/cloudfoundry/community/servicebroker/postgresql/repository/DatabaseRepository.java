@@ -16,6 +16,7 @@
 package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
 import org.springframework.stereotype.Component;
@@ -58,7 +59,8 @@ public class DatabaseRepository {
         postgreSQLDatabase.executeUpdate("DROP DATABASE IF EXISTS \"" + databaseName + "\"");
     }
 
-    public Optional<Database> findOne(String databaseName) throws SQLException {
+    @SneakyThrows
+    public Optional<Database> findOne(String databaseName) {
         Map<Integer, String> parameterMap = new HashMap<>();
         parameterMap.put(1, databaseName);
         Map<String, String> result = postgreSQLDatabase.executePreparedSelect("SELECT 1 FROM pg_database WHERE datname = ?", parameterMap);
