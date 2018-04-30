@@ -20,6 +20,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
+import org.cloudfoundry.community.servicebroker.postgresql.jdbc.QueryExecutor;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
@@ -33,7 +34,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ServiceInstanceRepository {
     
-    private final PostgreSQLDatabase postgreSQLDatabase;
+    private final QueryExecutor queryExecutor;
 
     public void save(CreateServiceInstanceRequest createServiceInstanceRequest) throws SQLException {
         Map<Integer, String> parameterMap = new HashMap<>();
@@ -42,20 +43,20 @@ public class ServiceInstanceRepository {
         parameterMap.put(3, createServiceInstanceRequest.getPlanId());
         parameterMap.put(4, createServiceInstanceRequest.getOrganizationGuid());
         parameterMap.put(5, createServiceInstanceRequest.getSpaceGuid());
-        postgreSQLDatabase.executePreparedUpdate("INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES (?, ?, ?, ?, ?)", parameterMap);
+        queryExecutor.executePreparedUpdate("INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES (?, ?, ?, ?, ?)", parameterMap);
     }
 
     public void delete(UUID instanceId) throws SQLException {
         Map<Integer, String> parameterMap = new HashMap<>();
         parameterMap.put(1, instanceId.toString());
-        postgreSQLDatabase.executePreparedUpdate("DELETE FROM service WHERE serviceinstanceid=?", parameterMap);
+        queryExecutor.executePreparedUpdate("DELETE FROM service WHERE serviceinstanceid=?", parameterMap);
     }
 
     @SneakyThrows
     public Optional<ServiceInstance> findServiceInstance(UUID instanceId) {
         Map<Integer, String> parameterMap = new HashMap<>();
         parameterMap.put(1, instanceId.toString());
-        Map<String, String> result = postgreSQLDatabase.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", parameterMap);
+        Map<String, String> result = queryExecutor.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", parameterMap);
         if (result.isEmpty()) {
             return Optional.empty();
         } else {

@@ -16,6 +16,7 @@
 package org.cloudfoundry.community.servicebroker.postgresql.repository;
 
 import lombok.AllArgsConstructor;
+import org.cloudfoundry.community.servicebroker.postgresql.jdbc.QueryExecutor;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
@@ -24,26 +25,26 @@ import java.sql.SQLException;
 @AllArgsConstructor
 public class RoleRepository {
 
-    private final PostgreSQLDatabase postgreSQLDatabase;
+    private final QueryExecutor queryExecutor;
 
     public void create(String name) throws SQLException {
-        postgreSQLDatabase.executeUpdate("CREATE ROLE \"" + name + "\"");
+        queryExecutor.executeUpdate("CREATE ROLE \"" + name + "\"");
     }
 
     public void delete(String name) throws SQLException {
-        postgreSQLDatabase.executeUpdate("DROP ROLE IF EXISTS \"" + name + "\"");
+        queryExecutor.executeUpdate("DROP ROLE IF EXISTS \"" + name + "\"");
     }
 
     public void setPassword(String roleName, String password) throws SQLException {
-        postgreSQLDatabase.executeUpdate("ALTER ROLE \"" + roleName + "\" LOGIN password '" + password + "'");
+        queryExecutor.executeUpdate("ALTER ROLE \"" + roleName + "\" LOGIN password '" + password + "'");
     }
 
     public void unsetPassword(String roleName) throws SQLException{
-        postgreSQLDatabase.executeUpdate("ALTER ROLE \"" + roleName + "\" NOLOGIN");
+        queryExecutor.executeUpdate("ALTER ROLE \"" + roleName + "\" NOLOGIN");
     }
 
     public void grantRoleTo(String roleMember, String roleGroup) throws SQLException {
-        postgreSQLDatabase.executeUpdate("GRANT \"" + roleGroup + "\" TO \"" + roleMember + "\"");
+        queryExecutor.executeUpdate("GRANT \"" + roleGroup + "\" TO \"" + roleMember + "\"");
     }
 
 }

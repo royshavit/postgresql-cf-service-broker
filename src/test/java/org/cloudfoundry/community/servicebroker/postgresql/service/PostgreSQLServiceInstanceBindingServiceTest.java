@@ -6,7 +6,7 @@ import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindi
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
 import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.DatabaseRepository;
-import org.cloudfoundry.community.servicebroker.postgresql.repository.PostgreSQLDatabase;
+import org.cloudfoundry.community.servicebroker.postgresql.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleRepository;
 import org.junit.Test;
 import org.postgresql.jdbc4.Jdbc4Connection;
@@ -30,28 +30,28 @@ import static org.mockito.Mockito.*;
 public class PostgreSQLServiceInstanceBindingServiceTest {
 
     @SneakyThrows
-    private PostgreSQLDatabase postgreSQLDatabase() {
+    private QueryExecutor queryExecutor() {
         DatabaseMetaData metaData = mock(DatabaseMetaData.class);
         Connection connection = mock(Jdbc4Connection.class);
         when(connection.getMetaData()).thenReturn(metaData);
         when(connection.createStatement()).thenReturn(mock(Statement.class));
         DataSource dataSource = mock(DataSource.class);
         when(dataSource.getConnection()).thenReturn(connection);
-        return spy(new PostgreSQLDatabase(dataSource));
+        return spy(new QueryExecutor(dataSource));
     }
 
 
     @SneakyThrows
     @Test
     public void createServiceInstanceBinding() {
-        PostgreSQLDatabase postgreSQLDatabase = postgreSQLDatabase();
-        doReturn(ImmutableMap.of("", "")).when(postgreSQLDatabase).executePreparedSelect(anyString(), any());
-        RoleRepository roleRepository = new RoleRepository(postgreSQLDatabase);
+        QueryExecutor queryExecutor = queryExecutor();
+        doReturn(ImmutableMap.of("", "")).when(queryExecutor).executePreparedSelect(anyString(), any());
+        RoleRepository roleRepository = new RoleRepository(queryExecutor);
         String hostName = "db.com";
         int port = 123;
         PostgreSQLServiceInstanceBindingService bindingService
                 = new PostgreSQLServiceInstanceBindingService(
-                new DatabaseRepository(postgreSQLDatabase, new Database(hostName, port, "master-db", "master-user")),
+                new DatabaseRepository(queryExecutor, new Database(hostName, port, "master-db", "master-user")),
                 roleRepository,
                 new SecureRandom());
         UUID instanceId = new UUID(1, 1);

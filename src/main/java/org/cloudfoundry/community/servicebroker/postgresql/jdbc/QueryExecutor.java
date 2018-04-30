@@ -1,4 +1,4 @@
-package org.cloudfoundry.community.servicebroker.postgresql.repository;
+package org.cloudfoundry.community.servicebroker.postgresql.jdbc;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import static java.util.Objects.requireNonNull;
 @Slf4j
 @Component
 @AllArgsConstructor
-public class PostgreSQLDatabase {
+public class QueryExecutor {
 
     private final DataSource dataSource;
 

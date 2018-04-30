@@ -18,6 +18,7 @@ package org.cloudfoundry.community.servicebroker.postgresql.repository;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.cloudfoundry.community.servicebroker.postgresql.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
 import org.springframework.stereotype.Component;
 
@@ -31,20 +32,20 @@ import java.util.Optional;
 @AllArgsConstructor
 public class DatabaseRepository {
     
-    private final PostgreSQLDatabase postgreSQLDatabase;
+    private final QueryExecutor queryExecutor;
     private final Database masterDatabase;
     
     public void create(String databaseName, String owner) throws SQLException {
-        postgreSQLDatabase.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
-        postgreSQLDatabase.executeUpdate("REVOKE all on database \"" + databaseName + "\" from public");
-        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + owner + "\"");
+        queryExecutor.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
+        queryExecutor.executeUpdate("REVOKE all on database \"" + databaseName + "\" from public");
+        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + owner + "\"");
     }
 
     public void delete(String databaseName) throws SQLException {
         Map<Integer, String> parameterMap = new HashMap<>();
         parameterMap.put(1, databaseName);
 
-        Map<String, String> result = postgreSQLDatabase.executeSelect("SELECT current_user");
+        Map<String, String> result = queryExecutor.executeSelect("SELECT current_user");
         String currentUser = null;
 
         if(result != null) {
@@ -55,16 +56,16 @@ public class DatabaseRepository {
             log.error("Current user for instance '" + databaseName + "' could not be found");
         }
 
-        postgreSQLDatabase.executePreparedSelect("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()", parameterMap);
-        postgreSQLDatabase.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + currentUser + "\"");
-        postgreSQLDatabase.executeUpdate("DROP DATABASE IF EXISTS \"" + databaseName + "\"");
+        queryExecutor.executePreparedSelect("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()", parameterMap);
+        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + currentUser + "\"");
+        queryExecutor.executeUpdate("DROP DATABASE IF EXISTS \"" + databaseName + "\"");
     }
 
     @SneakyThrows
     public Optional<Database> findOne(String databaseName) {
         Map<Integer, String> parameterMap = new HashMap<>();
         parameterMap.put(1, databaseName);
-        Map<String, String> result = postgreSQLDatabase.executePreparedSelect(
+        Map<String, String> result = queryExecutor.executePreparedSelect(
                 "SELECT d.datname, pg_catalog.pg_get_userbyid(d.datdba) AS owner FROM pg_catalog.pg_database d WHERE d.datname = ?;",
                 parameterMap);
         if (result.isEmpty()) {
