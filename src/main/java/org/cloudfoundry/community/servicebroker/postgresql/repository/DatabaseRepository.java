@@ -24,7 +24,6 @@ import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -46,18 +45,9 @@ public class DatabaseRepository {
     }
 
     public void delete(String databaseName) throws SQLException {
-        Map<Integer, String> parameterMap = new HashMap<>();
-        parameterMap.put(1, databaseName);
-        Map<String, String> result = queryExecutor.executeSelect("SELECT current_user");
-        String currentUser = null;
-        if(result != null) {
-            currentUser = result.get("current_user");
-        }
-        if(currentUser == null) {
-            log.error("Current user for instance '" + databaseName + "' could not be found");
-        }
-        queryExecutor.executePreparedSelect("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()", parameterMap);
-        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + currentUser + "\"");
+        queryExecutor.executePreparedSelect(
+                "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()",
+                ImmutableMap.of(1, databaseName));
         queryExecutor.executeUpdate("DROP DATABASE IF EXISTS \"" + databaseName + "\"");
     }
 
