@@ -43,17 +43,21 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
     @SneakyThrows
     @Test
     public void createServiceInstanceBinding() {
+        UUID instanceId = new UUID(1, 1);
+        String owner = instanceId.toString();
         QueryExecutor queryExecutor = queryExecutor();
         doReturn(ImmutableMap.of("", "")).when(queryExecutor).executePreparedSelect(anyString(), any());
+        doReturn(ImmutableMap.of("owner", owner)).when(queryExecutor).executePreparedSelect(anyString(), any());
         RoleRepository roleRepository = new RoleRepository(queryExecutor);
         String hostName = "db.com";
         int port = 123;
         PostgreSQLServiceInstanceBindingService bindingService
                 = new PostgreSQLServiceInstanceBindingService(
-                new DatabaseRepository(queryExecutor, new Database(hostName, port, "master-db", "master-user")),
+                new DatabaseRepository(queryExecutor, new Database(hostName, port, "master-db", "master-user",
+                        (host, port1, name, owner1, password) -> "postgres://master-user:secret@db.com:123/master-db"
+                )),
                 roleRepository,
                 new SecureRandom());
-        UUID instanceId = new UUID(1, 1);
         CreateServiceInstanceBindingRequest bindingRequest
                 = new CreateServiceInstanceBindingRequest("pg", "free", new UUID(1, 2).toString())
                 .withServiceInstanceId(instanceId.toString())
@@ -65,7 +69,7 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
         assertEquals(instanceId.toString(), credentials.get("database"));
         assertEquals(hostName, credentials.get("hostname"));
         assertEquals(port, credentials.get("port"));
-        assertEquals(instanceId.toString(), credentials.get("username"));
+        assertEquals(owner, credentials.get("username"));
         String expectedUri = "postgres://00000000-0000-0001-0000-000000000001:.*@db.com:123/00000000-0000-0001-0000-000000000001";
         assertThat(credentials.get("uri").toString(), matchesPattern(expectedUri));
     }

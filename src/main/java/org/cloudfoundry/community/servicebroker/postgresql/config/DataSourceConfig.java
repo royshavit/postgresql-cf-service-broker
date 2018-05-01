@@ -34,12 +34,14 @@ public class DataSourceConfig {
         URI uri = new URI(new URI(dataSource.getJdbcUrl()).getSchemeSpecificPart());
         int port = uri.getPort();
         String host = uri.getHost();
-        String databaseName = new URI(new URI(dataSource.getJdbcUrl()).getSchemeSpecificPart()).getPath().replaceFirst("/", "");
+        String databaseName = uri.getPath().replaceFirst("/", "");
         String user;
         try (Connection connection = dataSource.getConnection()) {
             user = connection.getMetaData().getUserName();
         }
-        return new Database(host, port, databaseName, user);
+        return new Database(host, port, databaseName, user,
+                (host1, port1, name, owner, password) -> uri.toString()
+        );
     }
 
 }

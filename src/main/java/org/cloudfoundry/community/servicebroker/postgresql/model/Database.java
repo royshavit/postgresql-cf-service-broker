@@ -2,8 +2,6 @@ package org.cloudfoundry.community.servicebroker.postgresql.model;
 
 import lombok.Value;
 
-import java.util.UUID;
-
 /**
  * Created by taitz.
  */
@@ -13,4 +11,15 @@ public class Database {
     int port;
     String name;
     String owner;
+    UrlGenerator urlGenerator;
+    
+    public String getUrl(String password) {
+        return urlGenerator.getUrl(host, port, name, owner, password);
+    }
+
+    
+    public interface UrlGenerator {
+        String getUrl(String host, int port, String name, String owner, String password);
+    }
+
 }

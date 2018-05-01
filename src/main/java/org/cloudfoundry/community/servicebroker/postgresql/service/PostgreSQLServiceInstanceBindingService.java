@@ -64,11 +64,9 @@ public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceB
     private Map<String, Object> buildCredentials(String serviceInstanceId, String password) {
         Database database = databaseRepository.findOne(serviceInstanceId)
                 .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + serviceInstanceId));
-        String dbURL = String.format("postgres://%s:%s@%s:%d/%s", serviceInstanceId, password, database.getHost(),
-                database.getPort(), database.getName());
         Map<String, Object> credentials = new HashMap<>();
-        credentials.put("uri", dbURL);
-        credentials.put("username", serviceInstanceId);
+        credentials.put("uri", database.getUrl(password));
+        credentials.put("username", database.getOwner());
         credentials.put("password", password);
         credentials.put("hostname", database.getHost());
         credentials.put("port", database.getPort());
