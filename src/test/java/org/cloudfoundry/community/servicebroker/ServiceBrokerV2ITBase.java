@@ -39,7 +39,7 @@ import static com.jayway.restassured.RestAssured.given;
 @WebAppConfiguration
 @IntegrationTest("server.port:0")
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public abstract class ServiceBrokerV2IntegrationTestBase {
+public abstract class ServiceBrokerV2ITBase {
 
     @Value("${local.server.port}")
     protected int port;

@@ -50,11 +50,11 @@ public class DatababseCreationService implements ServiceInstanceService {
     @Override
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
             throws ServiceInstanceExistsException, ServiceBrokerException {
-        UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
+        String serviceInstanceId = createServiceInstanceRequest.getServiceInstanceId();
         try {
-            roleRepository.create(serviceInstanceId.toString());
-            roleRepository.grantRoleTo(serviceInstanceId.toString(), masterDatabaseUrl.getOwner());
-            databaseRepository.create(serviceInstanceId.toString(), serviceInstanceId.toString());
+            roleRepository.create(serviceInstanceId);
+            roleRepository.grantRoleTo(serviceInstanceId, masterDatabaseUrl.getOwner());
+            databaseRepository.create(serviceInstanceId, serviceInstanceId);
             serviceInstanceRepository.save(createServiceInstanceRequest);
         } catch (SQLException e) {
             log.error("Error while creating service instance '" + serviceInstanceId + "'", e);

@@ -35,9 +35,6 @@ import java.util.Optional;
 @AllArgsConstructor
 public class PostgresDatabaseRepository implements DatabaseRepository {
 
-    private static final Database.UrlGenerator URL_GENERATOR = (host, port, name, owner, password) ->
-            String.format("postgres://%s:%s@%s:%d/%s", owner, password, host, port, name);
-
     private final QueryExecutor queryExecutor;
     private final Database masterDb;
 
@@ -65,10 +62,13 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         if (result.isEmpty()) {
             return Optional.empty();
         } else {
-            return Optional.of(
-                    new Database(masterDb.getHost(), masterDb.getPort(), dbName, result.get("owner"), URL_GENERATOR)
-            );
+            return Optional.of(new Database(masterDb.getHost(), masterDb.getPort(), dbName, result.get("owner")));
         }
+    }
+
+    @Override
+    public String toUrl(String host, int port, String databaseName, String user, String password) {
+        return String.format("postgres://%s:%s@%s:%d/%s", user, password, host, port, databaseName);
     }
 
 }

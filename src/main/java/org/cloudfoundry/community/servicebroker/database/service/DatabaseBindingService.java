@@ -47,26 +47,29 @@ public class DatabaseBindingService implements ServiceInstanceBindingService {
     public ServiceInstanceBinding createServiceInstanceBinding(CreateServiceInstanceBindingRequest createServiceInstanceBindingRequest)
             throws ServiceInstanceBindingExistsException, ServiceBrokerException {
         String serviceInstanceId = createServiceInstanceBindingRequest.getServiceInstanceId();
+        String bindingId = createServiceInstanceBindingRequest.getBindingId();
         String password = new BigInteger(130, random).toString(32);
         try {
-            roleRepository.setPassword(serviceInstanceId, password);
+            roleRepository.create(bindingId);
+            roleRepository.grantRoleTo(bindingId, serviceInstanceId);
+            roleRepository.setPassword(bindingId, password);
         } catch (SQLException e) {
             throw new ServiceBrokerException(e.getMessage());
         }
         return new ServiceInstanceBinding(
-                createServiceInstanceBindingRequest.getBindingId(),
+                bindingId,
                 serviceInstanceId,
-                buildCredentials(serviceInstanceId, password),
+                buildCredentials(serviceInstanceId, bindingId, password),
                 null,
                 createServiceInstanceBindingRequest.getAppGuid());
     }
 
-    private Map<String, Object> buildCredentials(String serviceInstanceId, String password) {
+    private Map<String, Object> buildCredentials(String serviceInstanceId, String bindingId, String password) {
         Database database = databaseRepository.findOne(serviceInstanceId)
                 .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + serviceInstanceId));
         Map<String, Object> credentials = new HashMap<>();
-        credentials.put("uri", database.getUrl(password));
-        credentials.put("username", database.getOwner());
+        credentials.put("uri", databaseRepository.toUrl(database.getHost(), database.getPort(), database.getName(), bindingId, password));
+        credentials.put("username", bindingId);
         credentials.put("password", password);
         credentials.put("hostname", database.getHost());
         credentials.put("port", database.getPort());
@@ -78,13 +81,13 @@ public class DatabaseBindingService implements ServiceInstanceBindingService {
     public ServiceInstanceBinding deleteServiceInstanceBinding(DeleteServiceInstanceBindingRequest deleteServiceInstanceBindingRequest)
             throws ServiceBrokerException {
         String serviceInstanceId = deleteServiceInstanceBindingRequest.getInstance().getServiceInstanceId();
+        String bindingId = deleteServiceInstanceBindingRequest.getBindingId();
         try {
-            roleRepository.unsetPassword(serviceInstanceId);
+            roleRepository.delete(bindingId);
         } catch (SQLException e) {
             throw new ServiceBrokerException(e.getMessage());
         }
-        return new ServiceInstanceBinding(deleteServiceInstanceBindingRequest.getBindingId(), serviceInstanceId, null,
-                null, null);
+        return new ServiceInstanceBinding(bindingId, serviceInstanceId, null, null, null);
     }
-    
+
 }

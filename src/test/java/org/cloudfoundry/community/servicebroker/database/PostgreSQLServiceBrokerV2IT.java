@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.ValidatableResponse;
 import org.apache.http.HttpStatus;
-import org.cloudfoundry.community.servicebroker.ServiceBrokerV2IntegrationTestBase;
+import org.cloudfoundry.community.servicebroker.ServiceBrokerV2ITBase;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
 import org.cloudfoundry.community.servicebroker.database.config.Application;
 import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @SpringApplicationConfiguration(classes = Application.class)
-public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2IntegrationTestBase {
+public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
 
     @Value("${MASTER_JDBC_URL}")
     private String jdbcUrl;
@@ -122,12 +122,12 @@ public class PostgreSQLServiceBrokerV2IntegrationTests extends ServiceBrokerV2In
 
         ValidatableResponse response = given().auth().basic(username, password).header(apiVersionHeader).request().contentType(ContentType.JSON).body(request_body).when().put(createBindingPath).then().statusCode(HttpStatus.SC_CREATED);
 
-        response.body("credentials.uri", containsString("postgres://" + instanceId));
+        response.body("credentials.uri", containsString("postgres://" + BINDING_ID));
         response.body("syslog_drain_url", is(nullValue()));
         response.body("credentials.database", is(instanceId));
         response.body("credentials.hostname", is("localhost"));
         response.body("credentials.port", is(5432));
-        response.body("credentials.username", is(instanceId));
+        response.body("credentials.username", is(BINDING_ID.toString()));
     }
 
     /**

@@ -39,9 +39,7 @@ public class DataSourceConfig {
         try (Connection connection = dataSource.getConnection()) {
             user = connection.getMetaData().getUserName();
         }
-        return new Database(host, port, databaseName, user,
-                (host1, port1, name, owner, password) -> uri.toString()
-        );
+        return new Database(host, port, databaseName, user);
     }
 
 }
