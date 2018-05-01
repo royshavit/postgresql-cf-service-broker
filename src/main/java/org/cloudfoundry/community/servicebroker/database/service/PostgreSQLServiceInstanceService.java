@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cloudfoundry.community.servicebroker.postgresql.service;
+package org.cloudfoundry.community.servicebroker.database.service;
 
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -26,10 +26,10 @@ import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceReque
 import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.model.UpdateServiceInstanceRequest;
-import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
-import org.cloudfoundry.community.servicebroker.postgresql.repository.DatabaseRepository;
-import org.cloudfoundry.community.servicebroker.postgresql.repository.RoleRepository;
-import org.cloudfoundry.community.servicebroker.postgresql.repository.ServiceInstanceRepository;
+import org.cloudfoundry.community.servicebroker.database.model.Database;
+import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
+import org.cloudfoundry.community.servicebroker.database.repository.RoleRepository;
+import org.cloudfoundry.community.servicebroker.database.repository.ServiceInstanceRepository;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
 import org.springframework.stereotype.Service;
 

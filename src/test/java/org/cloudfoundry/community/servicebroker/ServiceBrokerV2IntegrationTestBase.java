@@ -4,7 +4,7 @@ import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Header;
 import org.apache.http.HttpStatus;
-import org.cloudfoundry.community.servicebroker.postgresql.config.CatalogConfig;
+import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;

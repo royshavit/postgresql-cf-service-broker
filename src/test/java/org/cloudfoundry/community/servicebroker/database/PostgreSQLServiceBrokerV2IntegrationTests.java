@@ -1,4 +1,4 @@
-package org.cloudfoundry.community.servicebroker.postgresql;
+package org.cloudfoundry.community.servicebroker.database;
 
 import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.http.ContentType;
@@ -6,9 +6,9 @@ import com.jayway.restassured.response.ValidatableResponse;
 import org.apache.http.HttpStatus;
 import org.cloudfoundry.community.servicebroker.ServiceBrokerV2IntegrationTestBase;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
-import org.cloudfoundry.community.servicebroker.postgresql.config.Application;
-import org.cloudfoundry.community.servicebroker.postgresql.config.CatalogConfig;
-import org.cloudfoundry.community.servicebroker.postgresql.jdbc.QueryExecutor;
+import org.cloudfoundry.community.servicebroker.database.config.Application;
+import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
+import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;

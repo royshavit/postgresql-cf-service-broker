@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cloudfoundry.community.servicebroker.postgresql.repository;
+package org.cloudfoundry.community.servicebroker.database.repository;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.cloudfoundry.community.servicebroker.postgresql.jdbc.QueryExecutor;
-import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
+import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
+import org.cloudfoundry.community.servicebroker.database.model.Database;
 import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;

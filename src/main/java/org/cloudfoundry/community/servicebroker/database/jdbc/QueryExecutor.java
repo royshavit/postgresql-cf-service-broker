@@ -1,4 +1,4 @@
-package org.cloudfoundry.community.servicebroker.postgresql.jdbc;
+package org.cloudfoundry.community.servicebroker.database.jdbc;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

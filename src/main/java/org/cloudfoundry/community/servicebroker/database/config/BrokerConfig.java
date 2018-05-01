@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.cloudfoundry.community.servicebroker.postgresql.config;
+package org.cloudfoundry.community.servicebroker.database.config;
 
 import org.cloudfoundry.community.servicebroker.config.BrokerApiVersionConfig;
 import org.springframework.context.annotation.Bean;

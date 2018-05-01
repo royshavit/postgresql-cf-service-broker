@@ -1,10 +1,10 @@
-package org.cloudfoundry.community.servicebroker.postgresql.config;
+package org.cloudfoundry.community.servicebroker.database.config;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import org.cloudfoundry.community.servicebroker.postgresql.model.Database;
+import org.cloudfoundry.community.servicebroker.database.model.Database;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

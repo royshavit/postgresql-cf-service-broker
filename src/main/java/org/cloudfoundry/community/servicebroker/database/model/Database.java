@@ -1,4 +1,4 @@
-package org.cloudfoundry.community.servicebroker.postgresql.model;
+package org.cloudfoundry.community.servicebroker.database.model;
 
 import lombok.Value;
 
