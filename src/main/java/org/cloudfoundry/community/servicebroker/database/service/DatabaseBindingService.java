@@ -37,7 +37,7 @@ import java.util.Random;
 @Service
 @Slf4j
 @AllArgsConstructor
-public class PostgreSQLServiceInstanceBindingService implements ServiceInstanceBindingService {
+public class DatabaseBindingService implements ServiceInstanceBindingService {
 
     private final DatabaseRepository databaseRepository;
     private final RoleRepository roleRepository;

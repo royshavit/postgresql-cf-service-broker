@@ -2,12 +2,12 @@ package org.cloudfoundry.community.servicebroker.database.service;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
+import org.cloudfoundry.community.servicebroker.database.repository.postgres.PostgresDatabaseRepository;
+import org.cloudfoundry.community.servicebroker.database.repository.postgres.PostgresRoleRepository;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.model.Database;
-import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
-import org.cloudfoundry.community.servicebroker.database.repository.RoleRepository;
 import org.junit.Test;
 
 import javax.sql.DataSource;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
 /**
  * Created by taitz.
  */
-public class PostgreSQLServiceInstanceBindingServiceTest {
+public class DatabaseBindingServiceTest {
 
     @SneakyThrows
     private QueryExecutor queryExecutor() {
@@ -48,12 +48,12 @@ public class PostgreSQLServiceInstanceBindingServiceTest {
         QueryExecutor queryExecutor = queryExecutor();
         doReturn(ImmutableMap.of("", "")).when(queryExecutor).executePreparedSelect(anyString(), any());
         doReturn(ImmutableMap.of("owner", owner)).when(queryExecutor).executePreparedSelect(anyString(), any());
-        RoleRepository roleRepository = new RoleRepository(queryExecutor);
+        PostgresRoleRepository roleRepository = new PostgresRoleRepository(queryExecutor);
         String hostName = "db.com";
         int port = 123;
-        PostgreSQLServiceInstanceBindingService bindingService
-                = new PostgreSQLServiceInstanceBindingService(
-                new DatabaseRepository(queryExecutor, new Database(hostName, port, "master-db", "master-user",
+        DatabaseBindingService bindingService
+                = new DatabaseBindingService(
+                new PostgresDatabaseRepository(queryExecutor, new Database(hostName, port, "master-db", "master-user",
                         (host, port1, name, owner1, password) -> "postgres://master-user:secret@db.com:123/master-db"
                 )),
                 roleRepository,

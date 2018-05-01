@@ -40,7 +40,7 @@ import java.util.UUID;
 @Service
 @Slf4j
 @AllArgsConstructor
-public class PostgreSQLServiceInstanceService implements ServiceInstanceService {
+public class DatababseCreationService implements ServiceInstanceService {
 
     private final DatabaseRepository databaseRepository;
     private final RoleRepository roleRepository;
@@ -95,6 +95,7 @@ public class PostgreSQLServiceInstanceService implements ServiceInstanceService 
         return getServiceInstance(UUID.fromString(id)).orElse(null);
     }
 
+    @SneakyThrows
     private Optional<ServiceInstance> getServiceInstance(UUID id) {
         return serviceInstanceRepository.findServiceInstance(id);
     }
