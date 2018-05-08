@@ -2,14 +2,16 @@ package org.cloudfoundry.community.servicebroker.database;
 
 import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.response.ExtractableResponse;
+import com.jayway.restassured.response.Response;
+import com.jayway.restassured.response.ResponseBodyExtractionOptions;
 import com.jayway.restassured.response.ValidatableResponse;
 import org.apache.http.HttpStatus;
 import org.cloudfoundry.community.servicebroker.ServiceBrokerV2ITBase;
-import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
 import org.cloudfoundry.community.servicebroker.database.config.Application;
 import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
-import org.junit.Before;
+import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
@@ -17,44 +19,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.util.Collections;
-import java.util.Map;
+import javax.sql.DataSource;
+import java.sql.*;
+import java.util.*;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@SpringApplicationConfiguration(classes = Application.class)
+@SpringApplicationConfiguration(classes = Application.class) //todo: deprecated
 public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
-
-    @Value("${MASTER_JDBC_URL}")
-    private String jdbcUrl;
 
     @Autowired
     private QueryExecutor queryExecutor;
 
-    private Connection conn;
+    @Autowired
+    private DataSource dataSource;
 
-    @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        conn = DriverManager.getConnection(jdbcUrl);
-    }
-
-    /**
-     * Sanity check, to make sure that the 'service' table required for this Service Broker is created.
-     */
-
-    @Test
-    public void case0_checkThatServiceTableIsCreated() throws Exception {
-        assertTrue(checkTableExists("service"));
-    }
 
     /**
      * cf marketplace
@@ -62,7 +44,6 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
      * <p>
      * Fetch Catalog (GET /v2/catalog)
      */
-
     @Override
     @Test
     public void case1_fetchCatalogSucceedsWithCredentials() throws Exception {
@@ -90,17 +71,7 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
     @Test
     public void case2_provisionInstanceSucceedsWithCredentials() throws Exception {
         super.case2_provisionInstanceSucceedsWithCredentials();
-
-        assertTrue(checkDatabaseExists(instanceId));
-        assertTrue(checkRoleExists(instanceId));
-        assertTrue(checkRoleIsDatabaseOwner(instanceId, instanceId));
-
-        Map<String, String> serviceResult = queryExecutor.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", ImmutableMap.of(1, instanceId));
-        assertThat(serviceResult.get("organizationguid"), is(organizationGuid));
-        assertThat(serviceResult.get("planid"), is(planId));
-        assertThat(serviceResult.get("spaceguid"), is(spaceGuid));
-        assertThat(serviceResult.get("servicedefinitionid"), is(serviceId));
-        assertThat(serviceResult.get("serviceinstanceid"), is(instanceId));
+        //todo: check deletion when does / does not exist
     }
 
     /**
@@ -112,6 +83,7 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
     @Override
     @Test
     public void case3_createBindingSucceedsWithCredentials() throws Exception {
+
         // same as super code, but we need the response here
         String createBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID);
         String request_body = "{\n" +
@@ -122,12 +94,13 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
 
         ValidatableResponse response = given().auth().basic(username, password).header(apiVersionHeader).request().contentType(ContentType.JSON).body(request_body).when().put(createBindingPath).then().statusCode(HttpStatus.SC_CREATED);
 
-        response.body("credentials.uri", containsString("postgres://" + BINDING_ID));
-        response.body("syslog_drain_url", is(nullValue()));
-        response.body("credentials.database", is(instanceId));
-        response.body("credentials.hostname", is("localhost"));
-        response.body("credentials.port", is(5432));
-        response.body("credentials.username", is(BINDING_ID.toString()));
+        ExtractableResponse<Response> response1 = response.extract();
+        ResponseBodyExtractionOptions body = response1.body();
+        String url = body.jsonPath().getString("credentials.uri");
+        String user = body.jsonPath().getString("credentials.username");
+        String password = body.jsonPath().getString("credentials.password");
+        
+        testConnection(url, user, password);
     }
 
     /**
@@ -157,28 +130,72 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
     @Test
     public void case5_removeInstanceSucceedsWithCredentials() throws Exception {
         super.case5_removeInstanceSucceedsWithCredentials();
-
-        assertFalse(checkDatabaseExists(instanceId));
-        assertFalse(checkRoleExists(instanceId));
-        assertFalse(checkRoleIsDatabaseOwner(instanceId, instanceId));
-
+        
+        //todo
+//        assertFalse(checkDatabaseExists(instanceId));
+//        assertFalse(checkRoleExists(instanceId));
+//        assertFalse(checkRoleIsDatabaseOwner(instanceId, instanceId));
+        
         Map<String, String> serviceResult = queryExecutor.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", ImmutableMap.of(1, instanceId));
         assertTrue(serviceResult.isEmpty());
     }
 
-    private boolean checkTableExists(String tableName) throws Exception {
-        DatabaseMetaData md = conn.getMetaData();
-        ResultSet rs = md.getTables(null, null, tableName, null);
+    private boolean checkTableExists(String tableName) throws SQLException { //todo: delete
+        try (Connection connection = dataSource.getConnection()) {
+            DatabaseMetaData md = connection.getMetaData();
+            ResultSet schemas = md.getSchemas();
+            while (schemas.next()) {
+                String value = schemas.getString(1);
+                System.out.println(value);
+            }
+            ResultSet tables = md.getTables(null, null, null, null);
+            ResultSet resultSet = connection.createStatement().executeQuery("select * from service");
+            if (resultSet.next()) {
+                String string = resultSet.getString(1);
+                System.out.println(string);
+            }
 
-        // ResultSet.last() followed by ResultSet.getRow() will give you the row count
-        rs.last();
-        int rowCount = rs.getRow();
-        return rowCount == 1;
+            while (tables.next()) {
+                String table = String.format("catalog   %s  schema  %s  table   %s  type    %s",
+                        tables.getString(1),
+                        tables.getString(2),
+                        tables.getString(3),
+                        tables.getString(4)
+                );
+                System.out.println(table);
+            }
+
+            ResultSet rs = md.getTables(null, null, tableName, null);
+            // ResultSet.last() followed by ResultSet.getRow() will give you the row count
+            rs.last();
+            int rowCount = rs.getRow();
+            return rowCount == 1;
+        }
     }
 
-    private boolean checkDatabaseExists(String databaseName) throws Exception {
-        Map<String, String> pgDatabaseResult = queryExecutor.executePreparedSelect("SELECT * FROM pg_catalog.pg_database WHERE datname = ?", ImmutableMap.of(1, databaseName));
-        return pgDatabaseResult.size() > 0;
+    private void testConnection(String url, String user, String password) throws SQLException {
+        try (Connection connection = DriverManager.getConnection("jdbc:" + url, user, password)) {
+            try (Statement statement = connection.createStatement()) {
+                ResultSet result = statement.executeQuery("select 1");
+                List<Map<String, String>> resultMap = getResultsFromResultSet(result);
+                assertThat(resultMap.size(), is(1));
+                System.out.println(resultMap);
+            }
+        }
+    }
+
+    private static List<Map<String, String>> getResultsFromResultSet(ResultSet result) throws SQLException { //todo: reuse
+        ResultSetMetaData resultMetaData = result.getMetaData();
+        int columns = resultMetaData.getColumnCount();
+        List<Map<String, String>> results = new ArrayList<>();
+        while (result.next()) {
+            Map<String, String> resultMap = new HashMap<>(columns);
+            for (int i = 1; i <= columns; i++) {
+                resultMap.put(resultMetaData.getColumnName(i), result.getString(i));
+            }
+            results.add(resultMap);
+        }
+        return results;
     }
 
     private boolean checkRoleExists(String roleName) throws Exception {

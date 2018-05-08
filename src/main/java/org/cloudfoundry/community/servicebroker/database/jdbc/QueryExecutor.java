@@ -1,12 +1,15 @@
 package org.cloudfoundry.community.servicebroker.database.jdbc;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -19,7 +22,8 @@ public class QueryExecutor {
     private final DataSource dataSource;
 
 
-    public void executeUpdate(String query) throws SQLException {
+    @SneakyThrows
+    public void executeUpdate(String query) {
         try (Connection connection = dataSource.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 statement.execute(query);
@@ -27,7 +31,8 @@ public class QueryExecutor {
         }
     }
 
-    public Map<String, String> executeSelect(String query) throws SQLException {
+    @SneakyThrows
+    public Map<String, String> executeSelect(String query) {
         try (Connection connection = dataSource.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 ResultSet result = statement.executeQuery(query);
@@ -36,7 +41,18 @@ public class QueryExecutor {
         }
     }
 
-    public void executePreparedUpdate(String query, Map<Integer, String> parameterMap) throws SQLException {
+    @SneakyThrows
+    public List<Map<String, String>> executeSelectAll(String query) {
+        try (Connection connection = dataSource.getConnection()) {
+            try (Statement statement = connection.createStatement()) {
+                ResultSet result = statement.executeQuery(query);
+                return getResultsFromResultSet(result);
+            }
+        }
+    }
+
+    @SneakyThrows
+    public void executePreparedUpdate(String query, Map<Integer, String> parameterMap) {
         requireNonNull(parameterMap);
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -48,7 +64,8 @@ public class QueryExecutor {
         }
     }
 
-    public Map<String, String> executePreparedSelect(String query, Map<Integer, String> parameterMap) throws SQLException {
+    @SneakyThrows
+    public Map<String, String> executePreparedSelect(String query, Map<Integer, String> parameterMap) {
         requireNonNull(parameterMap);
         try (Connection connection = dataSource.getConnection()) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
@@ -61,7 +78,8 @@ public class QueryExecutor {
         }
     }
 
-    private static Map<String, String> getResultMapFromResultSet(ResultSet result) throws SQLException {
+    @SneakyThrows
+    private static Map<String, String> getResultMapFromResultSet(ResultSet result) {
         ResultSetMetaData resultMetaData = result.getMetaData();
         int columns = resultMetaData.getColumnCount(); 
         Map<String, String> resultMap = new HashMap<>(columns); 
@@ -71,6 +89,21 @@ public class QueryExecutor {
             }
         } 
         return resultMap;
+    }
+    
+    @SneakyThrows
+    private static List<Map<String, String>> getResultsFromResultSet(ResultSet result) {
+        ResultSetMetaData resultMetaData = result.getMetaData();
+        int columns = resultMetaData.getColumnCount();
+        List<Map<String, String>> results = new ArrayList<>();
+        while (result.next()) {
+            Map<String, String> resultMap = new HashMap<>(columns);
+            for (int i = 1; i <= columns; i++) {
+                resultMap.put(resultMetaData.getColumnName(i), result.getString(i));
+            }
+            results.add(resultMap);
+        } 
+        return results;
     }
     
 }

@@ -6,7 +6,7 @@ import lombok.Value;
  * Created by taitz.
  */
 @Value
-public class Database {
+public class Database { //todo: is this necessary?
     String host;
     int port;
     String name;

@@ -1,21 +1,20 @@
 package org.cloudfoundry.community.servicebroker.database.repository;
 
-import org.cloudfoundry.community.servicebroker.database.model.Database;
-
-import java.sql.SQLException;
-import java.util.Optional;
+import java.util.Map;
 
 /**
  * Created by taitz.
  */
 public interface DatabaseRepository {
+
+    void createDatabase(String databaseName);
+
+    void deleteDatabase(String databaseName);
+
+//    Optional<Database> findDatabase(String databaseName); //todo: what about this?
+
+    Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges);
     
-    void create(String databaseName, String owner) throws SQLException;
-
-    void delete(String databaseName) throws SQLException;
-
-    Optional<Database> findOne(String dbName);
-
-    String toUrl(String host, int port, String databaseName, String user, String password);
+    void deleteUser(String databaseName, String username);
 
 }

@@ -1,0 +1,11 @@
+spring:
+  profiles: postgres
+  datasource:
+    url: jdbc:postgresql://localhost:5432/db-abc?user=abc&password=def
+
+---
+spring:
+  profiles: h2inmemory
+  datasource:
+    username: dbuser
+    password: dbpass

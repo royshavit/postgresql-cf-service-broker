@@ -16,59 +16,99 @@
 package org.cloudfoundry.community.servicebroker.database.repository.postgres;
 
 import com.google.common.collect.ImmutableMap;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.jdbc.pool.DataSource;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.model.Database;
+import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.sql.SQLException;
+import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Component
 @Profile(Consts.POSTGRES)
 @Slf4j
-@AllArgsConstructor
 public class PostgresDatabaseRepository implements DatabaseRepository {
 
     private final QueryExecutor queryExecutor;
-    private final Database masterDb;
+    private final String masterDbHost;
+    private final int masterDbPort;
+    private final String masterUsername;
 
-    @Override
-    public void create(String databaseName, String owner) throws SQLException {
-        queryExecutor.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
-        queryExecutor.executeUpdate("REVOKE all on database \"" + databaseName + "\" from public");
-        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + owner + "\"");
+    @SneakyThrows
+    public PostgresDatabaseRepository(QueryExecutor queryExecutor, DataSource dataSource) {
+        this.queryExecutor = queryExecutor;
+        URI uri = new URI(new URI(dataSource.getUrl()).getSchemeSpecificPart());
+        masterDbPort = uri.getPort();
+        masterDbHost = uri.getHost();
+        masterUsername = dataSource.getUsername();
     }
 
     @Override
-    public void delete(String databaseName) throws SQLException {
+    public void createDatabase(String databaseName) {
+        queryExecutor.executeUpdate("CREATE ROLE \"" + databaseName + "\"");
+        queryExecutor.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
+        queryExecutor.executeUpdate("REVOKE all on database \"" + databaseName + "\" from public");
+        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + databaseName + "\"");
+    }
+
+    @Override
+    public void deleteDatabase(String databaseName) {
         queryExecutor.executePreparedSelect(
                 "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()",
                 ImmutableMap.of(1, databaseName));
         queryExecutor.executeUpdate("DROP DATABASE IF EXISTS \"" + databaseName + "\"");
+        queryExecutor.executeUpdate("DROP ROLE IF EXISTS \"" + databaseName + "\""); //todo: share common sql
     }
 
-    @Override
-    @SneakyThrows
-    public Optional<Database> findOne(String dbName) {
+    private Optional<Database> findDatabase(String databaseName) {
         Map<String, String> result = queryExecutor.executePreparedSelect(
                 "SELECT d.datname, pg_catalog.pg_get_userbyid(d.datdba) AS owner FROM pg_catalog.pg_database d WHERE d.datname = ?;",
-                ImmutableMap.of(1, dbName));
+                ImmutableMap.of(1, databaseName));
         if (result.isEmpty()) {
             return Optional.empty();
         } else {
-            return Optional.of(new Database(masterDb.getHost(), masterDb.getPort(), dbName, result.get("owner")));
+            return Optional.of(new Database(masterDbHost, masterDbPort, databaseName, result.get("owner")));
         }
     }
 
     @Override
-    public String toUrl(String host, int port, String databaseName, String user, String password) {
-        return String.format("postgres://%s:%s@%s:%d/%s", user, password, host, port, databaseName);
+    public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
+        queryExecutor.executeUpdate("CREATE ROLE \"" + username + "\"");
+        queryExecutor.executeUpdate("GRANT \"" + databaseName + "\" TO \"" + username + "\"");
+        if (elevatedPrivileges) {
+            queryExecutor.executeUpdate("GRANT \"" + masterUsername + "\" TO \"" + username + "\"");
+        }
+        queryExecutor.executeUpdate("ALTER ROLE \"" + username + "\" LOGIN password '" + password + "'");
+        return buildCredentials(databaseName, username, password);
+    }
+
+    @Override
+    public void deleteUser(String databaseName, String username) {
+        queryExecutor.executeUpdate("DROP ROLE IF EXISTS \"" + username + "\""); //todo if exists?
+    }
+
+    private String toUrl(String host, int port, String databaseName, String user, String password) {
+        return String.format("postgresql://%s:%d/%s?user=%s&password=%s", host, port, databaseName, user, password);
+    }
+
+    private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {
+        Database database = findDatabase(databaseName)
+                .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + databaseName));
+        Map<String, Object> credentials = new HashMap<>();
+        credentials.put("uri", toUrl(database.getHost(), database.getPort(), database.getName(), userName, password));
+        credentials.put("username", userName);
+        credentials.put("password", password);
+        credentials.put("hostname", database.getHost());
+        credentials.put("port", database.getPort());
+        credentials.put("database", database.getName());
+        return credentials;
     }
 
 }

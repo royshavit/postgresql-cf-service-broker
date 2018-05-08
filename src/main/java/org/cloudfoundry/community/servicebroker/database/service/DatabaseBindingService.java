@@ -15,66 +15,46 @@
  */
 package org.cloudfoundry.community.servicebroker.database.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceBindingExistsException;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
-import org.cloudfoundry.community.servicebroker.database.model.Database;
-import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
-import org.cloudfoundry.community.servicebroker.database.repository.RoleRepository;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 @Service
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class DatabaseBindingService implements ServiceInstanceBindingService {
 
     private final DatabaseRepository databaseRepository;
-    private final RoleRepository roleRepository;
     private final Random random;
-
+    
+    @Value("${grant.users.elevated.privileges:false}")
+    private boolean grantUsersElevatedPrivileges; //todo: constructor
+    
     @Override
     public ServiceInstanceBinding createServiceInstanceBinding(CreateServiceInstanceBindingRequest createServiceInstanceBindingRequest)
             throws ServiceInstanceBindingExistsException, ServiceBrokerException {
         String serviceInstanceId = createServiceInstanceBindingRequest.getServiceInstanceId();
         String bindingId = createServiceInstanceBindingRequest.getBindingId();
         String password = new BigInteger(130, random).toString(32);
-        try {
-            roleRepository.create(bindingId);
-            roleRepository.grantRoleTo(bindingId, serviceInstanceId);
-            roleRepository.setPassword(bindingId, password);
-        } catch (SQLException e) {
-            throw new ServiceBrokerException(e.getMessage());
-        }
+        Map<String, Object> credentials = databaseRepository.createUser(serviceInstanceId, bindingId, password, grantUsersElevatedPrivileges);
         return new ServiceInstanceBinding(
                 bindingId,
                 serviceInstanceId,
-                buildCredentials(serviceInstanceId, bindingId, password),
+                credentials,
                 null,
                 createServiceInstanceBindingRequest.getAppGuid());
-    }
-
-    private Map<String, Object> buildCredentials(String serviceInstanceId, String bindingId, String password) {
-        Database database = databaseRepository.findOne(serviceInstanceId)
-                .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + serviceInstanceId));
-        Map<String, Object> credentials = new HashMap<>();
-        credentials.put("uri", databaseRepository.toUrl(database.getHost(), database.getPort(), database.getName(), bindingId, password));
-        credentials.put("username", bindingId);
-        credentials.put("password", password);
-        credentials.put("hostname", database.getHost());
-        credentials.put("port", database.getPort());
-        credentials.put("database", database.getName());
-        return credentials;
     }
 
     @Override
@@ -82,12 +62,10 @@ public class DatabaseBindingService implements ServiceInstanceBindingService {
             throws ServiceBrokerException {
         String serviceInstanceId = deleteServiceInstanceBindingRequest.getInstance().getServiceInstanceId();
         String bindingId = deleteServiceInstanceBindingRequest.getBindingId();
-        try {
-            roleRepository.delete(bindingId);
-        } catch (SQLException e) {
-            throw new ServiceBrokerException(e.getMessage());
-        }
+        databaseRepository.deleteUser(serviceInstanceId, bindingId);
         return new ServiceInstanceBinding(bindingId, serviceInstanceId, null, null, null);
     }
 
+    //todo: throw ServiceInstanceDoesNotExistException - it is an advised exception, also:
+    //ServiceInstanceBindingExistsException
 }

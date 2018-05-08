@@ -5,6 +5,7 @@ import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Header;
 import org.apache.http.HttpStatus;
 import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
+import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -13,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.IntegrationTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
@@ -36,6 +38,7 @@ import static com.jayway.restassured.RestAssured.given;
  * This would cause JUnit to run the methods in name-ascending order, causing the cases to run in order.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
+@ActiveProfiles({Consts.H2})
 @WebAppConfiguration
 @IntegrationTest("server.port:0")
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)

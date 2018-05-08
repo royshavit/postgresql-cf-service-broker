@@ -16,8 +16,9 @@
 package org.cloudfoundry.community.servicebroker.database.service;
 
 import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
+import org.cloudfoundry.community.servicebroker.database.repository.ServiceInstanceRepository;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceDoesNotExistException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceExistsException;
@@ -26,40 +27,26 @@ import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceReque
 import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.model.UpdateServiceInstanceRequest;
-import org.cloudfoundry.community.servicebroker.database.model.Database;
-import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
-import org.cloudfoundry.community.servicebroker.database.repository.RoleRepository;
-import org.cloudfoundry.community.servicebroker.database.repository.ServiceInstanceRepository;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
 import org.springframework.stereotype.Service;
 
-import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @Slf4j
 @AllArgsConstructor
-public class DatababseCreationService implements ServiceInstanceService {
+public class DatabaseCreationService implements ServiceInstanceService {
 
     private final DatabaseRepository databaseRepository;
-    private final RoleRepository roleRepository;
     private final ServiceInstanceRepository serviceInstanceRepository;
-    private final Database masterDatabaseUrl;
 
     @Override
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
             throws ServiceInstanceExistsException, ServiceBrokerException {
         String serviceInstanceId = createServiceInstanceRequest.getServiceInstanceId();
-        try {
-            roleRepository.create(serviceInstanceId);
-            roleRepository.grantRoleTo(serviceInstanceId, masterDatabaseUrl.getOwner());
-            databaseRepository.create(serviceInstanceId, serviceInstanceId);
-            serviceInstanceRepository.save(createServiceInstanceRequest);
-        } catch (SQLException e) {
-            log.error("Error while creating service instance '" + serviceInstanceId + "'", e);
-            throw new ServiceBrokerException(e.getMessage());
-        }
+        databaseRepository.createDatabase(serviceInstanceId);
+        serviceInstanceRepository.save(createServiceInstanceRequest);
         return new ServiceInstance(createServiceInstanceRequest);
     }
 
@@ -72,21 +59,15 @@ public class DatababseCreationService implements ServiceInstanceService {
         return instance.orElse(null);
     }
 
-    @SneakyThrows
+    //perhaps should verify that no bindings exist before deleting instance, although cloud foundry should ensure this.
     private void deleteServiceInstance(UUID serviceInstanceId) {
-        try {
-            serviceInstanceRepository.delete(serviceInstanceId);
-            databaseRepository.delete(serviceInstanceId.toString());
-            roleRepository.delete(serviceInstanceId.toString());
-        } catch (SQLException e) {
-            log.error("Error while deleting service instance '" + serviceInstanceId + "'", e);
-            throw new ServiceBrokerException(e.getMessage());
-        }
+        serviceInstanceRepository.delete(serviceInstanceId);
+        databaseRepository.deleteDatabase(serviceInstanceId.toString());
     }
 
     @Override
     public ServiceInstance updateServiceInstance(UpdateServiceInstanceRequest updateServiceInstanceRequest)
-            throws ServiceInstanceUpdateNotSupportedException, ServiceBrokerException, ServiceInstanceDoesNotExistException {
+            throws ServiceInstanceUpdateNotSupportedException, ServiceBrokerException, ServiceInstanceDoesNotExistException { //todo: ServiceInstanceDoesNotExistException is exception advised
         throw new IllegalStateException("Not implemented");
     }
 
@@ -95,7 +76,6 @@ public class DatababseCreationService implements ServiceInstanceService {
         return getServiceInstance(UUID.fromString(id)).orElse(null);
     }
 
-    @SneakyThrows
     private Optional<ServiceInstance> getServiceInstance(UUID id) {
         return serviceInstanceRepository.findServiceInstance(id);
     }
