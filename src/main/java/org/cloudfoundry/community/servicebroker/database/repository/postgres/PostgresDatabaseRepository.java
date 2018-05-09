@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
+import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -47,7 +48,9 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         URI uri = new URI(new URI(dataSource.getUrl()).getSchemeSpecificPart());
         masterDbPort = uri.getPort();
         masterDbHost = uri.getHost();
-        masterUsername = dataSource.getUsername();
+        try (Connection connection = dataSource.getConnection()) {
+            masterUsername = connection.getMetaData().getUserName();
+        }
     }
 
     @Override
