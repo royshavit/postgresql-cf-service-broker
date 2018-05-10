@@ -33,7 +33,6 @@ import java.util.UUID;
 @Slf4j
 public class H2DatabaseRepository implements DatabaseRepository {
 
-    private static final String CONNECTION_URL_FORMAT = "h2:mem:%s;USER=%s;PASSWORD=%s;IFEXISTS=TRUE";
     private static final String JDBC_URL_FORMAT = "jdbc:h2:mem:%s;USER=%s;PASSWORD=%s;IFEXISTS=TRUE";
     private static final String CREATE_CONNECTION_URL_FORMAT = "jdbc:h2:mem:%s;USER=%s;PASSWORD=%s;IFEXISTS=FALSE;DB_CLOSE_DELAY=-1"; //todo: duplicate urls
     private static final String CREATE_USER = "CREATE USER \"%s\" PASSWORD '%s'";
@@ -115,7 +114,9 @@ public class H2DatabaseRepository implements DatabaseRepository {
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {
         Map<String, Object> credentials = new HashMap<>();
-        credentials.put("uri", String.format(CONNECTION_URL_FORMAT, databaseName, userName, password));
+        String jdbcUrl = String.format(JDBC_URL_FORMAT, databaseName, userName, password);
+        credentials.put("uri", jdbcUrl);
+        credentials.put("jdbcurl", jdbcUrl);
         credentials.put("username", userName);
         credentials.put("password", password);
         credentials.put("database", databaseName);

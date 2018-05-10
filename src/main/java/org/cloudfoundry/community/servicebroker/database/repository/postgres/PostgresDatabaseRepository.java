@@ -98,7 +98,11 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     }
 
     private String toUrl(String host, int port, String databaseName, String user, String password) {
-        return String.format("postgresql://%s:%d/%s?user=%s&password=%s", host, port, databaseName, user, password);
+        return String.format("postgresql://%s:%s@%s:%d/%s", user, password, host, port, databaseName);
+    }
+
+    private String toJdbcUrl(String host, int port, String databaseName, String user, String password) {
+        return String.format("jdbc:postgresql://%s:%d/%s?%s&%s", host, port, databaseName, user, password);
     }
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {
@@ -106,6 +110,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
                 .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + databaseName));
         Map<String, Object> credentials = new HashMap<>();
         credentials.put("uri", toUrl(database.getHost(), database.getPort(), database.getName(), userName, password));
+        credentials.put("jdbcurl", toJdbcUrl(database.getHost(), database.getPort(), database.getName(), userName, password));
         credentials.put("username", userName);
         credentials.put("password", password);
         credentials.put("hostname", database.getHost());

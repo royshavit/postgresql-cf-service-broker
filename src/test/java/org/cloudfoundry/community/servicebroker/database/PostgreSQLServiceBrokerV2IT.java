@@ -96,7 +96,7 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
 
         ExtractableResponse<Response> response1 = response.extract();
         ResponseBodyExtractionOptions body = response1.body();
-        String url = body.jsonPath().getString("credentials.uri");
+        String url = body.jsonPath().getString("credentials.jdbcurl");
         String user = body.jsonPath().getString("credentials.username");
         String password = body.jsonPath().getString("credentials.password");
         
@@ -174,7 +174,7 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
     }
 
     private void testConnection(String url, String user, String password) throws SQLException {
-        try (Connection connection = DriverManager.getConnection("jdbc:" + url, user, password)) {
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
             try (Statement statement = connection.createStatement()) {
                 ResultSet result = statement.executeQuery("select 1");
                 List<Map<String, String>> resultMap = getResultsFromResultSet(result);

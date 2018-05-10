@@ -1,3 +1,8 @@
+security.user.password: password
+space.name: dev
+spring.profiles.active: postgres
+
+---
 spring:
   profiles: postgres
   datasource:

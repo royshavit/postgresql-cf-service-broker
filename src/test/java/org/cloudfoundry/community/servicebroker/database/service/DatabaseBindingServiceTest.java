@@ -14,14 +14,16 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 /**
  * Created by taitz.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = {Application.class}) //todo: need springboottest for this? perhaps test PostgresDatabaseRepository alone
+@SpringBootTest(classes = {Application.class})
+//todo: need springboottest for this? perhaps test PostgresDatabaseRepository alone
 @ActiveProfiles({Consts.POSTGRES})
 public class DatabaseBindingServiceTest {
 
@@ -60,8 +62,8 @@ public class DatabaseBindingServiceTest {
         assertEquals("localhost", credentials.get("hostname"));
         assertEquals(5432, credentials.get("port"));
         assertEquals(bindingId, credentials.get("username"));
-        String expectedUri = "postgresql://localhost:5432/00000000-0000-0001-0000-000000000001?user=00000000-0000-0001-0000-000000000003&password=";
-        assertTrue(credentials.get("uri").toString().startsWith(expectedUri));
+        String expectedUri = "postgresql://00000000-0000-0001-0000-000000000003:.*@localhost:5432/00000000-0000-0001-0000-000000000001";
+        assertThat(credentials.get("uri").toString(), matchesPattern(expectedUri));
     }
 
 }
