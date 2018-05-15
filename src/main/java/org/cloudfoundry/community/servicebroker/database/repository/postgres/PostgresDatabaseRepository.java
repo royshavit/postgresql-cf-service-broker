@@ -20,7 +20,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
-import org.cloudfoundry.community.servicebroker.database.model.Database;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
 import org.springframework.context.annotation.Profile;
@@ -30,7 +29,6 @@ import java.net.URI;
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 @Component
 @Profile(Consts.POSTGRES)
@@ -43,12 +41,12 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     private final String masterUsername;
 
     @SneakyThrows
-    public PostgresDatabaseRepository(QueryExecutor queryExecutor, DataSource dataSource) {
+    public PostgresDatabaseRepository(QueryExecutor queryExecutor, DataSource masterDataSource) {
         this.queryExecutor = queryExecutor;
-        URI uri = new URI(new URI(dataSource.getUrl()).getSchemeSpecificPart());
+        URI uri = new URI(new URI(masterDataSource.getUrl()).getSchemeSpecificPart());
         masterDbPort = uri.getPort();
         masterDbHost = uri.getHost();
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = masterDataSource.getConnection()) {
             masterUsername = connection.getMetaData().getUserName();
         }
     }
@@ -70,17 +68,6 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         queryExecutor.executeUpdate("DROP ROLE IF EXISTS \"" + databaseName + "\""); //todo: share common sql
     }
 
-    private Optional<Database> findDatabase(String databaseName) {
-        Map<String, String> result = queryExecutor.executePreparedSelect(
-                "SELECT d.datname, pg_catalog.pg_get_userbyid(d.datdba) AS owner FROM pg_catalog.pg_database d WHERE d.datname = ?;",
-                ImmutableMap.of(1, databaseName));
-        if (result.isEmpty()) {
-            return Optional.empty();
-        } else {
-            return Optional.of(new Database(masterDbHost, masterDbPort, databaseName, result.get("owner")));
-        }
-    }
-
     @Override
     public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
         queryExecutor.executeUpdate("CREATE ROLE \"" + username + "\"");
@@ -97,7 +84,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         queryExecutor.executeUpdate("DROP ROLE IF EXISTS \"" + username + "\""); //todo if exists?
     }
 
-    private String toUrl(String host, int port, String databaseName, String user, String password) {
+    private String toUrl(String host, int port, String databaseName, String user, String password) { //todo: necessary?
         return String.format("postgresql://%s:%s@%s:%d/%s", user, password, host, port, databaseName);
     }
 
@@ -106,16 +93,14 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     }
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {
-        Database database = findDatabase(databaseName)
-                .orElseThrow(() -> new IllegalArgumentException("found no database for service instance " + databaseName));
         Map<String, Object> credentials = new HashMap<>();
-        credentials.put("uri", toUrl(database.getHost(), database.getPort(), database.getName(), userName, password));
-        credentials.put("jdbcurl", toJdbcUrl(database.getHost(), database.getPort(), database.getName(), userName, password));
+        credentials.put("uri", toUrl(masterDbHost, masterDbPort, databaseName, userName, password));
+        credentials.put("jdbcurl", toJdbcUrl(masterDbHost, masterDbPort, databaseName, userName, password));
         credentials.put("username", userName);
         credentials.put("password", password);
-        credentials.put("hostname", database.getHost());
-        credentials.put("port", database.getPort());
-        credentials.put("database", database.getName());
+        credentials.put("hostname", masterDbHost);
+        credentials.put("port", masterDbPort);
+        credentials.put("database", databaseName);
         return credentials;
     }
 
