@@ -208,4 +208,29 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
         String owner = pgRoleIsDatabaseOwnerResult.get("owner");
         return (owner != null) ? owner.equals(roleName) : false;
     }
+
+    private void testWrongPassword(String databaseName, String owner) throws SQLException { //todo
+        String url;
+        url = String.format("jdbc:h2:mem:%s;DB_CLOSE_DELAY=-1;USER=%s;PASSWORD=%s", databaseName, owner, UUID.randomUUID());
+        try (Connection connection = DriverManager.getConnection(url)) {
+            try (Statement statement = connection.createStatement()) {
+                ResultSet result = statement.executeQuery("select 1");
+                Map<String, String> resultMap = getResultMapFromResultSet(result);
+                System.out.println(resultMap);
+            }
+        }
+    }
+
+    private static Map<String, String> getResultMapFromResultSet(ResultSet result) throws SQLException {
+        ResultSetMetaData resultMetaData = result.getMetaData();
+        int columns = resultMetaData.getColumnCount();
+        Map<String, String> resultMap = new HashMap<>(columns);
+        if (result.next()) {
+            for (int i = 1; i <= columns; i++) {
+                resultMap.put(resultMetaData.getColumnName(i), result.getString(i));
+            }
+        }
+        return resultMap;
+    }
+
 }

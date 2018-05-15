@@ -45,7 +45,7 @@ public class DatabaseCreationService implements ServiceInstanceService {
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
             throws ServiceInstanceExistsException, ServiceBrokerException {
         String serviceInstanceId = createServiceInstanceRequest.getServiceInstanceId();
-        databaseRepository.createDatabase(serviceInstanceId);
+        databaseRepository.createDatabase(serviceInstanceId, serviceInstanceId);
         serviceInstanceRepository.save(createServiceInstanceRequest);
         return new ServiceInstance(createServiceInstanceRequest);
     }

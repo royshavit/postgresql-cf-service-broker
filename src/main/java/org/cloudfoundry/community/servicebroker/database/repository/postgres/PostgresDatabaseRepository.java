@@ -35,6 +35,9 @@ import java.util.Map;
 @Slf4j
 public class PostgresDatabaseRepository implements DatabaseRepository {
 
+    private static final String POSTGRES_URL = "postgresql://%s:%s@%s:%d/%s";
+    private static final String JDBC_URL = "jdbc:postgresql://%s:%d/%s?%s&%s";
+
     private final QueryExecutor queryExecutor;
     private final String masterDbHost;
     private final int masterDbPort;
@@ -52,11 +55,11 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     }
 
     @Override
-    public void createDatabase(String databaseName) {
-        queryExecutor.executeUpdate("CREATE ROLE \"" + databaseName + "\"");
+    public void createDatabase(String databaseName, String owner) {
+        queryExecutor.executeUpdate("CREATE ROLE \"" + owner + "\"");
         queryExecutor.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
         queryExecutor.executeUpdate("REVOKE all on database \"" + databaseName + "\" from public");
-        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + databaseName + "\"");
+        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + owner + "\"");
     }
 
     @Override
@@ -84,18 +87,10 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         queryExecutor.executeUpdate("DROP ROLE IF EXISTS \"" + username + "\""); //todo if exists?
     }
 
-    private String toUrl(String host, int port, String databaseName, String user, String password) { //todo: necessary?
-        return String.format("postgresql://%s:%s@%s:%d/%s", user, password, host, port, databaseName);
-    }
-
-    private String toJdbcUrl(String host, int port, String databaseName, String user, String password) {
-        return String.format("jdbc:postgresql://%s:%d/%s?%s&%s", host, port, databaseName, user, password);
-    }
-
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {
         Map<String, Object> credentials = new HashMap<>();
-        credentials.put("uri", toUrl(masterDbHost, masterDbPort, databaseName, userName, password));
-        credentials.put("jdbcurl", toJdbcUrl(masterDbHost, masterDbPort, databaseName, userName, password));
+        credentials.put("uri", String.format(POSTGRES_URL, userName, password, masterDbHost, masterDbPort, databaseName));
+        credentials.put("jdbcurl", String.format(JDBC_URL, masterDbHost, masterDbPort, databaseName, userName, password));
         credentials.put("username", userName);
         credentials.put("password", password);
         credentials.put("hostname", masterDbHost);
