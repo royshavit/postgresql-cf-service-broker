@@ -41,7 +41,7 @@ public class ServiceInstanceRepository {
 
     @SneakyThrows
     @Autowired
-    private void createServiceInstanceTable(DataSource dataSource) { //todo: constructor
+    private void createServiceInstanceTable(DataSource dataSource) { //todo: constructor -> flyway?
         try (Connection connection = dataSource.getConnection()) {
             String createServiceInstanceTable
                     = "CREATE TABLE IF NOT EXISTS service (serviceinstanceid varchar(200) not null default '',"

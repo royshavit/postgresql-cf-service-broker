@@ -67,8 +67,8 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         queryExecutor.executePreparedSelect(
                 "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()",
                 ImmutableMap.of(1, databaseName));
-        queryExecutor.executeUpdate("DROP DATABASE IF EXISTS \"" + databaseName + "\"");
-        queryExecutor.executeUpdate("DROP ROLE IF EXISTS \"" + databaseName + "\""); //todo: share common sql
+        queryExecutor.executeUpdate("DROP DATABASE \"" + databaseName + "\"");
+        queryExecutor.executeUpdate("DROP ROLE \"" + databaseName + "\""); //todo: share common sql
     }
 
     @Override
@@ -84,7 +84,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
 
     @Override
     public void deleteUser(String databaseName, String username) {
-        queryExecutor.executeUpdate("DROP ROLE IF EXISTS \"" + username + "\""); //todo if exists?
+        queryExecutor.executeUpdate("DROP ROLE \"" + username + "\"");
     }
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {
