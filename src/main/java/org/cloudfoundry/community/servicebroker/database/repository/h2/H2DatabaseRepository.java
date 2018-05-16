@@ -45,8 +45,8 @@ public class H2DatabaseRepository implements DatabaseRepository {
 
     @SneakyThrows
     @Override
-    public void createDatabase(String databaseName, String owner) {
-        String url = String.format(CREATE_DATABASE_URL, databaseName, owner, masterPassword);
+    public void createDatabase(String databaseName) {
+        String url = String.format(CREATE_DATABASE_URL, databaseName, databaseName, masterPassword);
         try (Connection connection = DriverManager.getConnection(url)) {
             try (Statement statement = connection.createStatement()) {
                 ResultSet result = statement.executeQuery("select 1");

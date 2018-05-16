@@ -55,11 +55,11 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     }
 
     @Override
-    public void createDatabase(String databaseName, String owner) {
-        queryExecutor.executeUpdate("CREATE ROLE \"" + owner + "\"");
+    public void createDatabase(String databaseName) {
+        queryExecutor.executeUpdate(createRole(databaseName));
         queryExecutor.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
         queryExecutor.executeUpdate("REVOKE all on database \"" + databaseName + "\" from public");
-        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + owner + "\"");
+        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + databaseName + "\"");
     }
 
     @Override
@@ -68,23 +68,35 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
                 "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()",
                 ImmutableMap.of(1, databaseName));
         queryExecutor.executeUpdate("DROP DATABASE \"" + databaseName + "\"");
-        queryExecutor.executeUpdate("DROP ROLE \"" + databaseName + "\""); //todo: share common sql
+        queryExecutor.executeUpdate(deleteRole(databaseName));
     }
 
     @Override
     public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
-        queryExecutor.executeUpdate("CREATE ROLE \"" + username + "\"");
-        queryExecutor.executeUpdate("GRANT \"" + databaseName + "\" TO \"" + username + "\"");
+        queryExecutor.executeUpdate(createRole(username));
+        queryExecutor.executeUpdate(grantRole(databaseName, username));
         if (elevatedPrivileges) {
-            queryExecutor.executeUpdate("GRANT \"" + masterUsername + "\" TO \"" + username + "\"");
+            queryExecutor.executeUpdate(grantRole(masterUsername, username)); //todo: WITH ADMIN OPTION
         }
         queryExecutor.executeUpdate("ALTER ROLE \"" + username + "\" LOGIN password '" + password + "'");
         return buildCredentials(databaseName, username, password);
     }
 
+    private String createRole(String role) {
+        return "CREATE ROLE \"" + role + "\"";
+    }
+
+    private String deleteRole(String role) {
+        return "DROP ROLE \"" + role + "\"";
+    }
+
+    private String grantRole(String roleToGrant, String roleToBenefit) {
+        return "GRANT \"" + roleToGrant + "\" TO \"" + roleToBenefit + "\"";
+    }
+
     @Override
     public void deleteUser(String databaseName, String username) {
-        queryExecutor.executeUpdate("DROP ROLE \"" + username + "\"");
+        queryExecutor.executeUpdate(deleteRole(username));
     }
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {
