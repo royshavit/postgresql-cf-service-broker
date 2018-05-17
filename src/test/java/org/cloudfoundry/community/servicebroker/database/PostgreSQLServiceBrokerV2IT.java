@@ -175,28 +175,10 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
     }
 
     private void testConnection(String url, String user, String password) throws SQLException {
-        try (Connection connection = DriverManager.getConnection(url, user, password)) {
-            try (Statement statement = connection.createStatement()) {
-                ResultSet result = statement.executeQuery("select 1");
-                List<Map<String, String>> resultMap = getResultsFromResultSet(result);
-                assertThat(resultMap.size(), is(1));
-                System.out.println(resultMap);
-            }
-        }
-    }
-
-    private static List<Map<String, String>> getResultsFromResultSet(ResultSet result) throws SQLException { //todo: reuse
-        ResultSetMetaData resultMetaData = result.getMetaData();
-        int columns = resultMetaData.getColumnCount();
-        List<Map<String, String>> results = new ArrayList<>();
-        while (result.next()) {
-            Map<String, String> resultMap = new HashMap<>(columns);
-            for (int i = 1; i <= columns; i++) {
-                resultMap.put(resultMetaData.getColumnName(i), result.getString(i));
-            }
-            results.add(resultMap);
-        }
-        return results;
+        List<Map<String, String>> rows = new QueryExecutor(url).select("select 1");
+        assertThat(rows.size(), is(1));
+        String result = rows.iterator().next().values().iterator().next();
+        assertThat(result, is("1"));
     }
 
     private void testWrongPassword(String databaseName, String owner) throws SQLException { //todo
