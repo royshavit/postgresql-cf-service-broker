@@ -15,7 +15,6 @@
  */
 package org.cloudfoundry.community.servicebroker.database.repository.postgres;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.jdbc.pool.DataSource;
@@ -64,7 +63,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
 
     @Override
     public void deleteDatabase(String databaseName) {
-        queryExecutor.executeSelectAll(
+        queryExecutor.executeSelect(
                 "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity " +
                         "WHERE pg_stat_activity.datname = '" + databaseName + "' AND pid <> pg_backend_pid()");
         queryExecutor.executeUpdate("DROP DATABASE \"" + databaseName + "\"");

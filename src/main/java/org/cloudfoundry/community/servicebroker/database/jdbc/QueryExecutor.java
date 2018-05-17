@@ -2,7 +2,6 @@ package org.cloudfoundry.community.servicebroker.database.jdbc;
 
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
@@ -15,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @Component
 @AllArgsConstructor
 public class QueryExecutor {
@@ -33,28 +31,28 @@ public class QueryExecutor {
     }
 
     @SneakyThrows
-    public List<Map<String, String>> executeSelectAll(String query) {
+    public List<Map<String, String>> executeSelect(String query) {
         try (Connection connection = dataSource.getConnection()) {
             try (Statement statement = connection.createStatement()) {
                 ResultSet result = statement.executeQuery(query);
-                return getResultsFromResultSet(result);
+                return toRows(result);
             }
         }
     }
 
     @SneakyThrows
-    private List<Map<String, String>> getResultsFromResultSet(ResultSet result) {
-        ResultSetMetaData resultMetaData = result.getMetaData();
-        int columns = resultMetaData.getColumnCount();
-        List<Map<String, String>> results = new ArrayList<>();
+    private List<Map<String, String>> toRows(ResultSet result) {
+        ResultSetMetaData metaData = result.getMetaData();
+        int columns = metaData.getColumnCount();
+        List<Map<String, String>> rows = new ArrayList<>();
         while (result.next()) {
-            Map<String, String> resultMap = new HashMap<>(columns);
+            Map<String, String> row = new HashMap<>(columns);
             for (int i = 1; i <= columns; i++) {
-                resultMap.put(resultMetaData.getColumnName(i), result.getString(i));
+                row.put(metaData.getColumnName(i), result.getString(i));
             }
-            results.add(resultMap);
+            rows.add(row);
         }
-        return results;
+        return rows;
     }
 
 }

@@ -68,7 +68,7 @@ public class ServiceInstanceRepository {
     }
 
     public Optional<ServiceInstance> findServiceInstance(UUID instanceId) {
-        List<Map<String, String>> instances = queryExecutor.executeSelectAll(
+        List<Map<String, String>> instances = queryExecutor.executeSelect(
                 "SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'");
         Assert.state(instances.size() <= 1, "found multiple instances with id " + instanceId);
         if (instances.isEmpty()) {

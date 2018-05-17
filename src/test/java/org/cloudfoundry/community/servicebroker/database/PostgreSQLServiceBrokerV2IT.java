@@ -135,7 +135,7 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
 //        assertFalse(checkRoleExists(instanceId));
 //        assertFalse(checkRoleIsDatabaseOwner(instanceId, instanceId));
 
-        List<Map<String, String>> serviceResult = queryExecutor.executeSelectAll(
+        List<Map<String, String>> serviceResult = queryExecutor.executeSelect(
                 "SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'"
         );
         assertTrue(serviceResult.isEmpty());
