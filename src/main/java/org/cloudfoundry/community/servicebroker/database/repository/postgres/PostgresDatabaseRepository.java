@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 import java.net.URI;
 import java.sql.Connection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -35,7 +36,7 @@ import java.util.Map;
 public class PostgresDatabaseRepository implements DatabaseRepository {
 
     private static final String POSTGRES_URL = "postgresql://%s:%s@%s:%d/%s";
-    private static final String JDBC_URL = "jdbc:postgresql://%s:%d/%s?%s&%s";
+    private static final String JDBC_URL = "jdbc:postgresql://%s:%d/%s?user=%s&password=%s";
 
     private final QueryExecutor queryExecutor;
     private final String masterDbHost;
@@ -55,7 +56,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
 
     @Override
     public void createDatabase(String databaseName) {
-        log.info("creating database {}", databaseName); 
+        log.info("creating database {}", databaseName);
         queryExecutor.update(createRole(databaseName));
         queryExecutor.update("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
         queryExecutor.update("REVOKE all on database \"" + databaseName + "\" from public");
@@ -105,6 +106,12 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         log.info("deleting user {} of database {}", username, databaseName);
         queryExecutor.update(deleteRole(username));
         log.info("deleted user {} of database {}", username, databaseName);
+    }
+
+    @Override
+    public boolean userExists(String databaseName, String username) {
+        List<Map<String, String>> result = queryExecutor.select("SELECT 1 FROM pg_roles WHERE rolname='" + username + "'");
+        return result.size() >= 1;
     }
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {

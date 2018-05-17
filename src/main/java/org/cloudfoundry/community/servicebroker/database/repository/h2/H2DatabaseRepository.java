@@ -41,7 +41,7 @@ public class H2DatabaseRepository implements DatabaseRepository {
 
     private final String masterPassword;
 
-    
+
     public H2DatabaseRepository(@Value("${spring.datasource.password}") String masterPassword) {
         this.masterPassword = masterPassword;
     }
@@ -72,7 +72,7 @@ public class H2DatabaseRepository implements DatabaseRepository {
     @Override
     public void deleteDatabase(String databaseName) {
         log.info("deleting database {}", databaseName);
-        String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
+        String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword); //todo: repeating urls
         queryExecutor(url).update("SHUTDOWN");
         log.info("deleted database {}", databaseName);
     }
@@ -96,6 +96,14 @@ public class H2DatabaseRepository implements DatabaseRepository {
         String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
         queryExecutor(url).update("DROP USER \"" + username + "\"");
         log.info("deleted user {} of database {}", username, databaseName);
+    }
+
+    @Override
+    public boolean userExists(String databaseName, String username) {
+        String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
+        List<Map<String, String>> result
+                = queryExecutor(url).select("select 1 from information_schema.users where name = '" + username + "'");
+        return result.size() >= 1;
     }
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {

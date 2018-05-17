@@ -12,7 +12,9 @@ public interface DatabaseRepository {
     void deleteDatabase(String databaseName);
 
     Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges);
-    
+
     void deleteUser(String databaseName, String username);
+    
+    boolean userExists(String databaseName, String username);
 
 }

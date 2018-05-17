@@ -46,7 +46,7 @@ public class DatabaseCreationService implements ServiceInstanceService {
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
             throws ServiceInstanceExistsException, ServiceBrokerException {
         UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
-        getServiceInstance(serviceInstanceId).ifPresent(this::throwAlreadyExistsException); 
+        serviceInstanceRepository.findServiceInstance(serviceInstanceId).ifPresent(this::throwAlreadyExistsException); 
         log.info("creating instance {}", serviceInstanceId);
         databaseRepository.createDatabase(serviceInstanceId.toString());
         serviceInstanceRepository.save(createServiceInstanceRequest);
@@ -64,7 +64,7 @@ public class DatabaseCreationService implements ServiceInstanceService {
             throws ServiceBrokerException {
         UUID serviceInstanceId = UUID.fromString(deleteServiceInstanceRequest.getServiceInstanceId());
         log.info("deleting instance {}", serviceInstanceId);
-        Optional<ServiceInstance> instance = getServiceInstance(serviceInstanceId);
+        Optional<ServiceInstance> instance = serviceInstanceRepository.findServiceInstance(serviceInstanceId);
         instance.ifPresent(serviceInstance -> deleteServiceInstance(serviceInstanceId));
         return instance.orElse(null);
     }
@@ -84,11 +84,7 @@ public class DatabaseCreationService implements ServiceInstanceService {
 
     @Override
     public ServiceInstance getServiceInstance(String id) {
-        return getServiceInstance(UUID.fromString(id)).orElse(null);
-    }
-
-    private Optional<ServiceInstance> getServiceInstance(UUID id) {
-        return serviceInstanceRepository.findServiceInstance(id);
+        return serviceInstanceRepository.findServiceInstance(UUID.fromString(id)).orElse(null);
     }
 
 }

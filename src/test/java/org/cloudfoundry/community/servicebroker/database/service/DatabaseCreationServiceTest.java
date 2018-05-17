@@ -1,6 +1,5 @@
 package org.cloudfoundry.community.servicebroker.database.service;
 
-import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceDoesNotExistException;
@@ -14,17 +13,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.security.SecureRandom;
-import java.util.Random;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,7 +28,7 @@ import static org.junit.Assert.assertThat;
  * Created by taitz.
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = BrokerTestConfig.class)
 @ActiveProfiles({Consts.H2})
 public class DatabaseCreationServiceTest {
 
@@ -51,24 +43,6 @@ public class DatabaseCreationServiceTest {
     @Autowired
     private DatabaseCreationService databaseCreationService;
 
-    @Configuration
-    @Import(DataSourceAutoConfiguration.class)
-    @ComponentScan(
-            basePackageClasses = {
-                    QueryExecutor.class,
-                    Consts.class,
-                    DatabaseBindingService.class,
-            }
-    )
-    static class Config {
-
-        @Bean
-        Random random() {
-            return new SecureRandom();
-        }
-
-    }
-
     @Before
     public void clean() {
         try {
@@ -79,7 +53,7 @@ public class DatabaseCreationServiceTest {
     }
 
     @Test
-    public void createServiceInstance_instanceDoesNotExist_succeeds() throws ServiceBrokerException, ServiceInstanceExistsException {
+    public void createServiceInstance_instanceDoesNotExist_returnsInstance() throws ServiceBrokerException, ServiceInstanceExistsException {
         ServiceInstance serviceInstance = databaseCreationService.createServiceInstance(CREATE_REQUEST);
 
         assertThat(serviceInstance.getServiceInstanceId(), is(INSTANCE_ID));
@@ -126,7 +100,7 @@ public class DatabaseCreationServiceTest {
     }
 
     @Test
-    public void updateServiceInstance_instanceDoesNotExist_throwsUnsupportedException() throws ServiceInstanceDoesNotExistException, ServiceInstanceUpdateNotSupportedException, ServiceBrokerException {
+    public void updateServiceInstance_instanceDoesNotExist_throwsUnsupportedException() {
         assertThatThrownBy(
                 () -> databaseCreationService.updateServiceInstance(UPDATE_REQUEST)
 
