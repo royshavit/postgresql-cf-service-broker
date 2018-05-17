@@ -135,7 +135,9 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
 //        assertFalse(checkRoleExists(instanceId));
 //        assertFalse(checkRoleIsDatabaseOwner(instanceId, instanceId));
 
-        Map<String, String> serviceResult = queryExecutor.executeSelect("SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'");
+        List<Map<String, String>> serviceResult = queryExecutor.executeSelectAll(
+                "SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'"
+        );
         assertTrue(serviceResult.isEmpty());
     }
 
@@ -195,17 +197,6 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
             results.add(resultMap);
         }
         return results;
-    }
-
-    private boolean checkRoleExists(String roleName) throws Exception {
-        Map<String, String> pgRoleResult = queryExecutor.executeSelect("SELECT * FROM pg_catalog.pg_roles WHERE rolname = '" + roleName + "'");
-        return pgRoleResult.size() > 0;
-    }
-
-    private boolean checkRoleIsDatabaseOwner(String roleName, String databaseName) throws Exception {
-        Map<String, String> pgRoleIsDatabaseOwnerResult = queryExecutor.executeSelect("SELECT d.datname as name, pg_catalog.pg_get_userbyid(d.datdba) as owner FROM pg_catalog.pg_database d WHERE d.datname = '" + databaseName + "'");
-        String owner = pgRoleIsDatabaseOwnerResult.get("owner");
-        return (owner != null) ? owner.equals(roleName) : false;
     }
 
     private void testWrongPassword(String databaseName, String owner) throws SQLException { //todo

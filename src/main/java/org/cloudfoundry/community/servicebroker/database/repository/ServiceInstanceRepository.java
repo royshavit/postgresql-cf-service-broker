@@ -23,9 +23,11 @@ import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceReque
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,15 +68,17 @@ public class ServiceInstanceRepository {
     }
 
     public Optional<ServiceInstance> findServiceInstance(UUID instanceId) {
-        Map<String, String> result = queryExecutor.executeSelect(
+        List<Map<String, String>> instances = queryExecutor.executeSelectAll(
                 "SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'");
-        if (result.isEmpty()) {
+        Assert.state(instances.size() <= 1, "found multiple instances with id " + instanceId);
+        if (instances.isEmpty()) {
             return Optional.empty();
         } else {
-            String serviceDefinitionId = result.get("servicedefinitionid");
-            String organizationGuid = result.get("organizationguid");
-            String planId = result.get("planid");
-            String spaceGuid = result.get("spaceguid");
+            Map<String, String> instance = instances.iterator().next();
+            String serviceDefinitionId = instance.get("servicedefinitionid");
+            String organizationGuid = instance.get("organizationguid");
+            String planId = instance.get("planid");
+            String spaceGuid = instance.get("spaceguid");
             CreateServiceInstanceRequest wrapper
                     = new CreateServiceInstanceRequest(serviceDefinitionId, planId, organizationGuid, spaceGuid)
                     .withServiceInstanceId(instanceId.toString());

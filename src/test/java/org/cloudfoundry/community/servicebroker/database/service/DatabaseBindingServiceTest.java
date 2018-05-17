@@ -27,6 +27,8 @@ import static org.junit.Assert.assertThat;
 @ActiveProfiles({Consts.POSTGRES})
 public class DatabaseBindingServiceTest {
 
+    //todo: clean before each test
+    
     @Autowired
     private
     DatabaseCreationService databaseCreationService;
