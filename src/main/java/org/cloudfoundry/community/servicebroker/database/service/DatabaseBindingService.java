@@ -15,7 +15,6 @@
  */
 package org.cloudfoundry.community.servicebroker.database.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
@@ -33,15 +32,19 @@ import java.util.Random;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class DatabaseBindingService implements ServiceInstanceBindingService {
 
     private final DatabaseRepository databaseRepository;
     private final Random random;
-    
-    @Value("${grant.users.elevated.privileges:false}")
-    private boolean grantUsersElevatedPrivileges; //todo: constructor
-    
+    private final boolean grantUsersElevatedPrivileges;
+
+    public DatabaseBindingService(DatabaseRepository databaseRepository, Random random,
+                                  @Value("${grant.users.elevated.privileges:false}") boolean grantUsersElevatedPrivileges) {
+        this.databaseRepository = databaseRepository;
+        this.random = random;
+        this.grantUsersElevatedPrivileges = grantUsersElevatedPrivileges;
+    }
+
     @Override
     public ServiceInstanceBinding createServiceInstanceBinding(CreateServiceInstanceBindingRequest createServiceInstanceBindingRequest)
             throws ServiceInstanceBindingExistsException, ServiceBrokerException {

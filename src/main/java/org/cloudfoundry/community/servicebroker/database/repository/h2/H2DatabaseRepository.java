@@ -39,8 +39,12 @@ public class H2DatabaseRepository implements DatabaseRepository {
     private static final String CREATE_USER = "CREATE USER \"%s\" PASSWORD '%s'";
     private static final String CREATE_ADMIN_USER = CREATE_USER + " ADMIN";
 
-    @Value("${spring.datasource.password}")
-    private String masterPassword;
+    private final String masterPassword;
+
+    
+    public H2DatabaseRepository(@Value("${spring.datasource.password}") String masterPassword) {
+        this.masterPassword = masterPassword;
+    }
 
 
     private QueryExecutor queryExecutor(String url) {
