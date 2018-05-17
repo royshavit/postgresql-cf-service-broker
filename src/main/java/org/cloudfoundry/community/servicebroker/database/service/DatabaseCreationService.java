@@ -45,8 +45,10 @@ public class DatabaseCreationService implements ServiceInstanceService {
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
             throws ServiceInstanceExistsException, ServiceBrokerException {
         String serviceInstanceId = createServiceInstanceRequest.getServiceInstanceId();
+        log.info("creating instance {}", serviceInstanceId);
         databaseRepository.createDatabase(serviceInstanceId);
         serviceInstanceRepository.save(createServiceInstanceRequest);
+        log.info("created instance {}", serviceInstanceId);
         return new ServiceInstance(createServiceInstanceRequest);
     }
 
@@ -54,15 +56,17 @@ public class DatabaseCreationService implements ServiceInstanceService {
     public ServiceInstance deleteServiceInstance(DeleteServiceInstanceRequest deleteServiceInstanceRequest)
             throws ServiceBrokerException {
         UUID serviceInstanceId = UUID.fromString(deleteServiceInstanceRequest.getServiceInstanceId());
+        log.info("deleting instance {}", serviceInstanceId);
         Optional<ServiceInstance> instance = getServiceInstance(serviceInstanceId);
         instance.ifPresent(serviceInstance -> deleteServiceInstance(serviceInstanceId));
         return instance.orElse(null);
     }
 
-    //perhaps should verify that no bindings exist before deleting instance, although cloud foundry should ensure this.
+    //todo: perhaps should verify that no bindings exist before deleting instance, although cloud foundry should ensure this.
     private void deleteServiceInstance(UUID serviceInstanceId) {
         serviceInstanceRepository.delete(serviceInstanceId);
         databaseRepository.deleteDatabase(serviceInstanceId.toString());
+        log.info("deleted instance {}", serviceInstanceId);
     }
 
     @Override

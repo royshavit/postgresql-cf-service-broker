@@ -47,14 +47,17 @@ public class DatabaseBindingService implements ServiceInstanceBindingService {
             throws ServiceInstanceBindingExistsException, ServiceBrokerException {
         String serviceInstanceId = createServiceInstanceBindingRequest.getServiceInstanceId();
         String bindingId = createServiceInstanceBindingRequest.getBindingId();
+        log.info("creating binding {} for instance {}", bindingId, serviceInstanceId);
         String password = new BigInteger(130, random).toString(32);
         Map<String, Object> credentials = databaseRepository.createUser(serviceInstanceId, bindingId, password, grantUsersElevatedPrivileges);
-        return new ServiceInstanceBinding(
+        ServiceInstanceBinding binding = new ServiceInstanceBinding(
                 bindingId,
                 serviceInstanceId,
                 credentials,
                 null,
                 createServiceInstanceBindingRequest.getAppGuid());
+        log.info("created binding {} for instance {}", bindingId, serviceInstanceId);
+        return binding;
     }
 
     @Override
@@ -62,8 +65,11 @@ public class DatabaseBindingService implements ServiceInstanceBindingService {
             throws ServiceBrokerException {
         String serviceInstanceId = deleteServiceInstanceBindingRequest.getInstance().getServiceInstanceId();
         String bindingId = deleteServiceInstanceBindingRequest.getBindingId();
+        log.info("deleting binding {} for instance {}", bindingId, serviceInstanceId);
         databaseRepository.deleteUser(serviceInstanceId, bindingId);
-        return new ServiceInstanceBinding(bindingId, serviceInstanceId, null, null, null);
+        ServiceInstanceBinding binding = new ServiceInstanceBinding(bindingId, serviceInstanceId, null, null, null);
+        log.info("deleted binding {} for instance {}", bindingId, serviceInstanceId);
+        return binding;
     }
 
     //todo: throw ServiceInstanceDoesNotExistException - it is an advised exception, also:

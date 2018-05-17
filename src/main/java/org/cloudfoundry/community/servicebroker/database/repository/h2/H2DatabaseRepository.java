@@ -50,8 +50,14 @@ public class H2DatabaseRepository implements DatabaseRepository {
     @SneakyThrows
     @Override
     public void createDatabase(String databaseName) {
+        log.info("creating database {}", databaseName);
         String url = String.format(CREATE_DATABASE_URL, databaseName, databaseName, masterPassword);
         List<Map<String, String>> rows = queryExecutor(url).select("select 1");
+        validateConnection(databaseName, rows);
+        log.info("created database {}", databaseName);
+    }
+
+    private void validateConnection(String databaseName, List<Map<String, String>> rows) {
         String errorMessage = "unable to connect to new database " + databaseName;
         Assert.state(rows.size() == 1, errorMessage);
         String result = rows.iterator().next().values().iterator().next();
@@ -61,24 +67,31 @@ public class H2DatabaseRepository implements DatabaseRepository {
     @SneakyThrows
     @Override
     public void deleteDatabase(String databaseName) {
+        log.info("deleting database {}", databaseName);
         String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
         queryExecutor(url).update("SHUTDOWN");
+        log.info("deleted database {}", databaseName);
     }
 
     @SneakyThrows
     @Override
     public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
+        log.info("creating user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
         //todo: test
         queryExecutor(url).update(String.format(elevatedPrivileges ? CREATE_ADMIN_USER : CREATE_USER, username, password));
-        return buildCredentials(databaseName, username, password);
+        Map<String, Object> credentials = buildCredentials(databaseName, username, password);
+        log.info("created user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
+        return credentials;
     }
 
     @SneakyThrows
     @Override
     public void deleteUser(String databaseName, String username) {
+        log.info("deleting user {} of database {}", username, databaseName);
         String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
         queryExecutor(url).update("DROP USER \"" + username + "\"");
+        log.info("deleted user {} of database {}", username, databaseName);
     }
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {

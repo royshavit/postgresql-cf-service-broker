@@ -42,6 +42,7 @@ public class ServiceInstanceRepository {
     @SneakyThrows
     @Autowired
     private void createServiceInstanceTable(DataSource dataSource) { //todo: constructor -> flyway?
+        log.info("creating service instance table");
         try (Connection connection = dataSource.getConnection()) {
             String createServiceInstanceTable
                     = "CREATE TABLE IF NOT EXISTS service (serviceinstanceid varchar(200) not null default '',"
@@ -51,9 +52,11 @@ public class ServiceInstanceRepository {
                     + " spaceguid varchar(200) not null default '')";
             connection.createStatement().execute(createServiceInstanceTable);
         }
+        log.info("created service instance table");
     }
 
     public void save(CreateServiceInstanceRequest serviceInstance) {
+        log.info("saving service instance {}", serviceInstance.getServiceInstanceId());
         queryExecutor.update(String.format(
                 "INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES ('%s', '%s', '%s', '%s', '%s')",
                 serviceInstance.getServiceInstanceId(),
@@ -61,19 +64,25 @@ public class ServiceInstanceRepository {
                 serviceInstance.getPlanId(),
                 serviceInstance.getOrganizationGuid(),
                 serviceInstance.getSpaceGuid()));
+        log.info("saved service instance {}", serviceInstance.getServiceInstanceId());
     }
 
     public void delete(UUID instanceId) {
+        log.info("deleting service instance {}", instanceId);
         queryExecutor.update("DELETE FROM service WHERE serviceinstanceid = '" + instanceId + "'");
+        log.info("deleted service instance {}", instanceId);
     }
 
     public Optional<ServiceInstance> findServiceInstance(UUID instanceId) {
+        log.info("locating service instance {}", instanceId);
         List<Map<String, String>> instances = queryExecutor.select(
                 "SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'");
         Assert.state(instances.size() <= 1, "found multiple instances with id " + instanceId);
         if (instances.isEmpty()) {
+            log.info("service instance {} not found", instanceId);
             return Optional.empty();
         } else {
+            log.info("found service instance {}", instanceId);
             Map<String, String> instance = instances.iterator().next();
             String serviceDefinitionId = instance.get("servicedefinitionid");
             String organizationGuid = instance.get("organizationguid");
