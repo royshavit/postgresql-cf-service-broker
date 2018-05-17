@@ -55,29 +55,29 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
 
     @Override
     public void createDatabase(String databaseName) {
-        queryExecutor.executeUpdate(createRole(databaseName));
-        queryExecutor.executeUpdate("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
-        queryExecutor.executeUpdate("REVOKE all on database \"" + databaseName + "\" from public");
-        queryExecutor.executeUpdate("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + databaseName + "\"");
+        queryExecutor.update(createRole(databaseName));
+        queryExecutor.update("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
+        queryExecutor.update("REVOKE all on database \"" + databaseName + "\" from public");
+        queryExecutor.update("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + databaseName + "\"");
     }
 
     @Override
     public void deleteDatabase(String databaseName) {
-        queryExecutor.executeSelect(
+        queryExecutor.select(
                 "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity " +
                         "WHERE pg_stat_activity.datname = '" + databaseName + "' AND pid <> pg_backend_pid()");
-        queryExecutor.executeUpdate("DROP DATABASE \"" + databaseName + "\"");
-        queryExecutor.executeUpdate(deleteRole(databaseName));
+        queryExecutor.update("DROP DATABASE \"" + databaseName + "\"");
+        queryExecutor.update(deleteRole(databaseName));
     }
 
     @Override
     public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
-        queryExecutor.executeUpdate(createRole(username));
-        queryExecutor.executeUpdate(grantRole(databaseName, username));
+        queryExecutor.update(createRole(username));
+        queryExecutor.update(grantRole(databaseName, username));
         if (elevatedPrivileges) {
-            queryExecutor.executeUpdate(grantRole(masterUsername, username)); //todo: WITH ADMIN OPTION
+            queryExecutor.update(grantRole(masterUsername, username)); //todo: WITH ADMIN OPTION
         }
-        queryExecutor.executeUpdate("ALTER ROLE \"" + username + "\" LOGIN password '" + password + "'");
+        queryExecutor.update("ALTER ROLE \"" + username + "\" LOGIN password '" + password + "'");
         return buildCredentials(databaseName, username, password);
     }
 
@@ -95,7 +95,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
 
     @Override
     public void deleteUser(String databaseName, String username) {
-        queryExecutor.executeUpdate(deleteRole(username));
+        queryExecutor.update(deleteRole(username));
     }
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {

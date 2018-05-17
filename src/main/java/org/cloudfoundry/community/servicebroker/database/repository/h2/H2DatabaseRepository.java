@@ -17,17 +17,16 @@ package org.cloudfoundry.community.servicebroker.database.repository.h2;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -43,53 +42,43 @@ public class H2DatabaseRepository implements DatabaseRepository {
     @Value("${spring.datasource.password}")
     private String masterPassword;
 
+
+    private QueryExecutor queryExecutor(String url) {
+        return new QueryExecutor(url);
+    }
+
     @SneakyThrows
     @Override
     public void createDatabase(String databaseName) {
         String url = String.format(CREATE_DATABASE_URL, databaseName, databaseName, masterPassword);
-        try (Connection connection = DriverManager.getConnection(url)) {
-            try (Statement statement = connection.createStatement()) {
-                ResultSet result = statement.executeQuery("select 1");
-                result.next();
-                String answer = result.getString(1);
-                assert answer.equals("1");
-            }
-        }
+        List<Map<String, String>> rows = queryExecutor(url).select("select 1");
+        String errorMessage = "unable to connect to new database " + databaseName;
+        Assert.state(rows.size() == 1, errorMessage);
+        String result = rows.iterator().next().values().iterator().next();
+        Assert.state(result.equals("1"), errorMessage);
     }
-
 
     @SneakyThrows
     @Override
     public void deleteDatabase(String databaseName) {
         String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
-        try (Connection connection = DriverManager.getConnection(url)) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("SHUTDOWN");
-            }
-        }
+        queryExecutor(url).update("SHUTDOWN");
     }
 
     @SneakyThrows
     @Override
     public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
         String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
-        try (Connection connection = DriverManager.getConnection(url)) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute(String.format(elevatedPrivileges ? CREATE_ADMIN_USER : CREATE_USER, username, password)); //todo: test
-            }
-        }
+        //todo: test
+        queryExecutor(url).update(String.format(elevatedPrivileges ? CREATE_ADMIN_USER : CREATE_USER, username, password));
         return buildCredentials(databaseName, username, password);
     }
 
     @SneakyThrows
     @Override
-    public void deleteUser(String databaseName, String username) { //todo: use queryupdater
+    public void deleteUser(String databaseName, String username) {
         String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
-        try (Connection connection = DriverManager.getConnection(url)) {
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("DROP USER \"" + username + "\"");
-            }
-        }
+        queryExecutor(url).update("DROP USER \"" + username + "\"");
     }
 
     private Map<String, Object> buildCredentials(String databaseName, String userName, String password) {

@@ -54,7 +54,7 @@ public class ServiceInstanceRepository {
     }
 
     public void save(CreateServiceInstanceRequest serviceInstance) {
-        queryExecutor.executeUpdate(String.format(
+        queryExecutor.update(String.format(
                 "INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES ('%s', '%s', '%s', '%s', '%s')",
                 serviceInstance.getServiceInstanceId(),
                 serviceInstance.getServiceDefinitionId(),
@@ -64,11 +64,11 @@ public class ServiceInstanceRepository {
     }
 
     public void delete(UUID instanceId) {
-        queryExecutor.executeUpdate("DELETE FROM service WHERE serviceinstanceid = '" + instanceId + "'");
+        queryExecutor.update("DELETE FROM service WHERE serviceinstanceid = '" + instanceId + "'");
     }
 
     public Optional<ServiceInstance> findServiceInstance(UUID instanceId) {
-        List<Map<String, String>> instances = queryExecutor.executeSelect(
+        List<Map<String, String>> instances = queryExecutor.select(
                 "SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'");
         Assert.state(instances.size() <= 1, "found multiple instances with id " + instanceId);
         if (instances.isEmpty()) {

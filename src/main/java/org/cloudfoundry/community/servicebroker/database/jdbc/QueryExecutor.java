@@ -1,29 +1,45 @@
 package org.cloudfoundry.community.servicebroker.database.jdbc;
 
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 @Component
-@AllArgsConstructor
 public class QueryExecutor {
 
-    private final DataSource dataSource;
+    private final Supplier<Connection> connectionSupplier;
+
+    @Autowired
+    public QueryExecutor(DataSource dataSource) {
+        connectionSupplier = () -> getConnection(dataSource);
+    }
+
+    public QueryExecutor(String url) {
+        connectionSupplier = () -> getConnection(url);
+    }
+
+    @SneakyThrows
+    private Connection getConnection(DataSource dataSource) {
+        return dataSource.getConnection();
+    }
+
+    @SneakyThrows
+    private Connection getConnection(String url) {
+        return DriverManager.getConnection(url);
+    }
 
 
     @SneakyThrows
-    public void executeUpdate(String query) {
-        try (Connection connection = dataSource.getConnection()) {
+    public void update(String query) {
+        try (Connection connection = connectionSupplier.get()) {
             try (Statement statement = connection.createStatement()) {
                 statement.execute(query);
             }
@@ -31,8 +47,8 @@ public class QueryExecutor {
     }
 
     @SneakyThrows
-    public List<Map<String, String>> executeSelect(String query) {
-        try (Connection connection = dataSource.getConnection()) {
+    public List<Map<String, String>> select(String query) {
+        try (Connection connection = connectionSupplier.get()) {
             try (Statement statement = connection.createStatement()) {
                 ResultSet result = statement.executeQuery(query);
                 return toRows(result);
