@@ -56,12 +56,6 @@
             <version>${spring-boot-cf-service-broker.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.cloudfoundry</groupId>
-            <artifactId>spring-boot-cf-service-broker-tests</artifactId>
-            <version>${spring-boot-cf-service-broker.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
             <version>1.9.40</version>
