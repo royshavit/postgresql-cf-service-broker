@@ -16,6 +16,7 @@
 package org.cloudfoundry.community.servicebroker.database.service;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
 import org.cloudfoundry.community.servicebroker.database.repository.ServiceInstanceRepository;
@@ -44,12 +45,18 @@ public class DatabaseCreationService implements ServiceInstanceService {
     @Override
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
             throws ServiceInstanceExistsException, ServiceBrokerException {
-        String serviceInstanceId = createServiceInstanceRequest.getServiceInstanceId();
+        UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
+        getServiceInstance(serviceInstanceId).ifPresent(this::throwAlreadyExistsException); 
         log.info("creating instance {}", serviceInstanceId);
-        databaseRepository.createDatabase(serviceInstanceId);
+        databaseRepository.createDatabase(serviceInstanceId.toString());
         serviceInstanceRepository.save(createServiceInstanceRequest);
         log.info("created instance {}", serviceInstanceId);
         return new ServiceInstance(createServiceInstanceRequest);
+    }
+
+    @SneakyThrows
+    private void throwAlreadyExistsException(ServiceInstance serviceInstance) {
+        throw new ServiceInstanceExistsException(serviceInstance);
     }
 
     @Override
@@ -72,7 +79,7 @@ public class DatabaseCreationService implements ServiceInstanceService {
     @Override
     public ServiceInstance updateServiceInstance(UpdateServiceInstanceRequest updateServiceInstanceRequest)
             throws ServiceInstanceUpdateNotSupportedException, ServiceBrokerException, ServiceInstanceDoesNotExistException { //todo: ServiceInstanceDoesNotExistException is exception advised
-        throw new IllegalStateException("Not implemented");
+        throw new ServiceInstanceUpdateNotSupportedException("service update not supported");
     }
 
     @Override
