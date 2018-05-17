@@ -1,6 +1,5 @@
 package org.cloudfoundry.community.servicebroker.database;
 
-import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.ExtractableResponse;
 import com.jayway.restassured.response.Response;
@@ -8,7 +7,6 @@ import com.jayway.restassured.response.ResponseBodyExtractionOptions;
 import com.jayway.restassured.response.ValidatableResponse;
 import org.apache.http.HttpStatus;
 import org.cloudfoundry.community.servicebroker.ServiceBrokerV2ITBase;
-import org.cloudfoundry.community.servicebroker.database.config.Application;
 import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
@@ -16,7 +14,6 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 
 import javax.sql.DataSource;
@@ -24,8 +21,10 @@ import java.sql.*;
 import java.util.*;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @SpringApplicationConfiguration(classes = Application.class) //todo: deprecated
@@ -135,8 +134,8 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
 //        assertFalse(checkDatabaseExists(instanceId));
 //        assertFalse(checkRoleExists(instanceId));
 //        assertFalse(checkRoleIsDatabaseOwner(instanceId, instanceId));
-        
-        Map<String, String> serviceResult = queryExecutor.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", ImmutableMap.of(1, instanceId));
+
+        Map<String, String> serviceResult = queryExecutor.executeSelect("SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'");
         assertTrue(serviceResult.isEmpty());
     }
 
@@ -199,12 +198,12 @@ public class PostgreSQLServiceBrokerV2IT extends ServiceBrokerV2ITBase {
     }
 
     private boolean checkRoleExists(String roleName) throws Exception {
-        Map<String, String> pgRoleResult = queryExecutor.executePreparedSelect("SELECT * FROM pg_catalog.pg_roles WHERE rolname = ?", ImmutableMap.of(1, roleName));
+        Map<String, String> pgRoleResult = queryExecutor.executeSelect("SELECT * FROM pg_catalog.pg_roles WHERE rolname = '" + roleName + "'");
         return pgRoleResult.size() > 0;
     }
 
     private boolean checkRoleIsDatabaseOwner(String roleName, String databaseName) throws Exception {
-        Map<String, String> pgRoleIsDatabaseOwnerResult = queryExecutor.executePreparedSelect("SELECT d.datname as name, pg_catalog.pg_get_userbyid(d.datdba) as owner FROM pg_catalog.pg_database d WHERE d.datname = ?", ImmutableMap.of(1, databaseName));
+        Map<String, String> pgRoleIsDatabaseOwnerResult = queryExecutor.executeSelect("SELECT d.datname as name, pg_catalog.pg_get_userbyid(d.datdba) as owner FROM pg_catalog.pg_database d WHERE d.datname = '" + databaseName + "'");
         String owner = pgRoleIsDatabaseOwnerResult.get("owner");
         return (owner != null) ? owner.equals(roleName) : false;
     }

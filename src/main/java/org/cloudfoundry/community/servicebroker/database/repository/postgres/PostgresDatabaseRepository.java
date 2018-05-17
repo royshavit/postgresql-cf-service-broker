@@ -64,9 +64,9 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
 
     @Override
     public void deleteDatabase(String databaseName) {
-        queryExecutor.executePreparedSelect(
-                "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = ? AND pid <> pg_backend_pid()",
-                ImmutableMap.of(1, databaseName));
+        queryExecutor.executeSelect(
+                "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity " +
+                        "WHERE pg_stat_activity.datname = '" + databaseName + "' AND pid <> pg_backend_pid()");
         queryExecutor.executeUpdate("DROP DATABASE \"" + databaseName + "\"");
         queryExecutor.executeUpdate(deleteRole(databaseName));
     }

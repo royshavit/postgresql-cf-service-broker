@@ -26,8 +26,6 @@ import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,7 +34,7 @@ import java.util.UUID;
 @Slf4j
 @AllArgsConstructor
 public class ServiceInstanceRepository {
-    
+
     private final QueryExecutor queryExecutor;
 
     @SneakyThrows
@@ -53,26 +51,23 @@ public class ServiceInstanceRepository {
         }
     }
 
-    public void save(CreateServiceInstanceRequest createServiceInstanceRequest) {
-        Map<Integer, String> parameterMap = new HashMap<>();
-        parameterMap.put(1, createServiceInstanceRequest.getServiceInstanceId());
-        parameterMap.put(2, createServiceInstanceRequest.getServiceDefinitionId());
-        parameterMap.put(3, createServiceInstanceRequest.getPlanId());
-        parameterMap.put(4, createServiceInstanceRequest.getOrganizationGuid());
-        parameterMap.put(5, createServiceInstanceRequest.getSpaceGuid());
-        queryExecutor.executePreparedUpdate("INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES (?, ?, ?, ?, ?)", parameterMap);
+    public void save(CreateServiceInstanceRequest serviceInstance) {
+        queryExecutor.executeUpdate(String.format(
+                "INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES ('%s', '%s', '%s', '%s', '%s')",
+                serviceInstance.getServiceInstanceId(),
+                serviceInstance.getServiceDefinitionId(),
+                serviceInstance.getPlanId(),
+                serviceInstance.getOrganizationGuid(),
+                serviceInstance.getSpaceGuid()));
     }
 
     public void delete(UUID instanceId) {
-        Map<Integer, String> parameterMap = new HashMap<>();
-        parameterMap.put(1, instanceId.toString());
-        queryExecutor.executePreparedUpdate("DELETE FROM service WHERE serviceinstanceid=?", parameterMap);
+        queryExecutor.executeUpdate("DELETE FROM service WHERE serviceinstanceid = '" + instanceId + "'");
     }
 
     public Optional<ServiceInstance> findServiceInstance(UUID instanceId) {
-        Map<Integer, String> parameterMap = new HashMap<>();
-        parameterMap.put(1, instanceId.toString());
-        Map<String, String> result = queryExecutor.executePreparedSelect("SELECT * FROM service WHERE serviceinstanceid = ?", parameterMap);
+        Map<String, String> result = queryExecutor.executeSelect(
+                "SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'");
         if (result.isEmpty()) {
             return Optional.empty();
         } else {

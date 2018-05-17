@@ -52,33 +52,6 @@ public class QueryExecutor {
     }
 
     @SneakyThrows
-    public void executePreparedUpdate(String query, Map<Integer, String> parameterMap) {
-        requireNonNull(parameterMap);
-        try (Connection connection = dataSource.getConnection()) {
-            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-                for (Map.Entry<Integer, String> parameter : parameterMap.entrySet()) {
-                    preparedStatement.setString(parameter.getKey(), parameter.getValue());
-                }
-                preparedStatement.executeUpdate();
-            }
-        }
-    }
-
-    @SneakyThrows
-    public Map<String, String> executePreparedSelect(String query, Map<Integer, String> parameterMap) {
-        requireNonNull(parameterMap);
-        try (Connection connection = dataSource.getConnection()) {
-            try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-                for (Map.Entry<Integer, String> parameter : parameterMap.entrySet()) {
-                    preparedStatement.setString(parameter.getKey(), parameter.getValue());
-                }
-                ResultSet result = preparedStatement.executeQuery();
-                return getResultMapFromResultSet(result);
-            }
-        }
-    }
-
-    @SneakyThrows
     private static Map<String, String> getResultMapFromResultSet(ResultSet result) {
         ResultSetMetaData resultMetaData = result.getMetaData();
         int columns = resultMetaData.getColumnCount(); 

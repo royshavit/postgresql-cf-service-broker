@@ -1,7 +1,7 @@
 package org.cloudfoundry.community.servicebroker.database.service;
 
 import lombok.SneakyThrows;
-import org.cloudfoundry.community.servicebroker.database.config.Application;
+import org.cloudfoundry.community.servicebroker.database.Application;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.model.*;
 import org.junit.Test;

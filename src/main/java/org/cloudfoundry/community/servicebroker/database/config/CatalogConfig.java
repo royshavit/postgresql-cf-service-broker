@@ -19,6 +19,8 @@ import org.cloudfoundry.community.servicebroker.model.BrokerApiVersion;
 import org.cloudfoundry.community.servicebroker.model.Catalog;
 import org.cloudfoundry.community.servicebroker.model.Plan;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
+import org.cloudfoundry.community.servicebroker.service.BeanCatalogService;
+import org.cloudfoundry.community.servicebroker.service.CatalogService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +35,11 @@ public class CatalogConfig {
 
     @Value("${space.name}")
     private String spaceName;
+
+    @Bean
+    public CatalogService beanCatalogService(Catalog catalog) {
+        return new BeanCatalogService(catalog);
+    }
 
     @Bean
     public Catalog catalog() throws IOException {
