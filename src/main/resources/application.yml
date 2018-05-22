@@ -1,4 +1,6 @@
-security.user.password: password
+security.user:
+  name: user
+  password: password
 space.name: dev
 spring.profiles.active: postgres
 

@@ -3,18 +3,19 @@ package org.cloudfoundry.community.servicebroker.database.controller;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Header;
-import com.jayway.restassured.response.ValidatableResponse;
+import com.jayway.restassured.specification.RequestSpecification;
 import org.apache.http.HttpStatus;
+import org.cloudfoundry.community.servicebroker.controller.CatalogController;
 import org.cloudfoundry.community.servicebroker.database.Application;
 import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
+import org.cloudfoundry.community.servicebroker.model.Catalog;
 import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationConfiguration;
@@ -22,12 +23,13 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
-import javax.annotation.PostConstruct;
-import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static com.jayway.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Abstract test base class for the Service Broker V2 API.
@@ -51,81 +53,53 @@ import static org.hamcrest.CoreMatchers.equalTo;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class DatabaseControllerIT {
 
-    @Value("${local.server.port}")
-    protected int port;
+    private static final UUID INSTANCE_ID = new UUID(1, 1);
+    private static final UUID BINDING_ID = new UUID(1, 2);
+    private static final String INSTANCE_BASE_PATH = "/v2/service_instances/%s"; 
+    private static final String BINDING_BASE_PATH = "/v2/service_instances/%s/service_bindings/%s"; 
+    private static final Header API_VERSION_HEADER = new Header("X-Broker-Api-Version", CatalogConfig.BROKER_API_VERSION); //todo: use org.cloudfoundry.community.servicebroker.model.BrokerApiVersion
 
-    @Value("${security.user.password}")
-    protected String password;
+    private String serviceId;
+    private String planId;
+    private Supplier<RequestSpecification> requestSupplier;
 
-    protected String serviceId;
-
-    @Value("${space.name}")
-    protected String spaceName;
+    @Autowired
+    private void setupAuthentication(
+            @Value("${security.user.name}") String username,
+            @Value("${security.user.password}") String password) {
+        requestSupplier = () -> given().auth().basic(username, password).header(API_VERSION_HEADER); 
+    }
     
-    protected String planId;
-
-    protected final String username = "user";
-
-    protected final String organizationGuid = "system";
-
-    protected final String spaceGuid = "thespace";
-
-    protected static String instanceId;
-
-    protected static String appGuid;
-    
-    protected static final UUID BINDING_ID = new UUID(1, 1);
-
-    protected final String fetchCatalogPath = "/v2/catalog";
-
-    protected final String provisionOrRemoveInstanceBasePath = "/v2/service_instances/%s";
-
-    protected final String createOrRemoveBindingBasePath = "/v2/service_instances/%s/service_bindings/%s";
-
-    protected final Header apiVersionHeader = new Header("X-Broker-Api-Version", CatalogConfig.BROKER_API_VERSION);
-    
-    @PostConstruct
-    public void init() {
+    @Autowired
+    private void setupSpaceParameters(@Value("${space.name}") String spaceName) { //todo: why need this?
         serviceId = "pg-" + spaceName;
         planId = "free-" + spaceName;
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @Autowired
+    private void setPort(@Value("${local.server.port}") int port) {
         RestAssured.port = port;
     }
 
-    @BeforeClass
-    public static void generateUniqueIds() {
-        instanceId = UUID.randomUUID().toString();
-        appGuid = UUID.randomUUID().toString();
-        
+    private RequestSpecification givenRequest() {
+        return requestSupplier.get();
     }
 
     @Test
-    public void case1_fetchCatalogSucceedsWithCredentials() throws Exception {
-        given().auth().basic(username, password).header(apiVersionHeader).when().get(fetchCatalogPath).then().statusCode(HttpStatus.SC_OK);
-
-
-        // same as super code, but we need the response here
-        ValidatableResponse response = given().auth().basic(username, password).header(apiVersionHeader).when().get(fetchCatalogPath).then().statusCode(HttpStatus.SC_OK);
-
-        CatalogConfig catalogConfig = new CatalogConfig();
-        ServiceDefinition serviceDefinition = catalogConfig.catalog().getServiceDefinitions().get(0);
-
-        response.body("services[0].id", equalTo("pg-" + spaceName));
-        response.body("services[0].name", equalTo("pgshared-" + spaceName));
-        response.body("services[0].description", equalTo(serviceDefinition.getDescription()));
-        response.body("services[0].requires", equalTo(serviceDefinition.getRequires()));
-        response.body("services[0].tags", equalTo(serviceDefinition.getTags()));
-        response.body("services[0].plans.id", equalTo(Collections.singletonList("free-" + spaceName)));
-
-
+    public void case1_fetchCatalogSucceedsWithCredentials() {
+        Catalog catalog = givenRequest().get(CatalogController.BASE_PATH).then().statusCode(HttpStatus.SC_OK).extract().body().as(Catalog.class); 
+        List<ServiceDefinition> serviceDefinitions = catalog.getServiceDefinitions(); 
+        assertFalse(serviceDefinitions.isEmpty()); 
+        ServiceDefinition serviceDefinition = serviceDefinitions.iterator().next(); 
+        assertTrue(serviceDefinition.isBindable());
+        assertFalse(serviceDefinition.getPlans().isEmpty());
     }
 
     @Test
-    public void case2_provisionInstanceSucceedsWithCredentials() throws Exception {
-        String provisionInstancePath = String.format(provisionOrRemoveInstanceBasePath, instanceId);
+    public void case2_provisionInstanceSucceedsWithCredentials() {
+        String provisionInstancePath = String.format(INSTANCE_BASE_PATH, INSTANCE_ID);
+        String organizationGuid = "system";
+        String spaceGuid = "thespace";
         String request_body = "{\n" +
                 "  \"service_id\":        \"" + serviceId + "\",\n" +
                 "  \"plan_id\":           \"" + planId + "\",\n" +
@@ -133,36 +107,36 @@ public class DatabaseControllerIT {
                 "  \"space_guid\":        \"" + spaceGuid + "\"\n" +
                 "}";
 
-        given().auth().basic(username, password).header(apiVersionHeader).request().contentType(ContentType.JSON).body(request_body).when().put(provisionInstancePath).then().statusCode(HttpStatus.SC_CREATED);
+        givenRequest().contentType(ContentType.JSON).body(request_body).put(provisionInstancePath).then().statusCode(HttpStatus.SC_CREATED);
     }
 
     @Test
-    public void case3_createBindingSucceedsWithCredentials() throws Exception {
-        String createBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID);
+    public void case3_createBindingSucceedsWithCredentials() {
+        String createBindingPath = String.format(BINDING_BASE_PATH, INSTANCE_ID, BINDING_ID);
         String request_body = "{\n" +
                 "  \"plan_id\":      \"" + planId + "\",\n" +
                 "  \"service_id\":   \"" + serviceId + "\",\n" +
-                "  \"app_guid\":     \"" + appGuid + "\"\n" +
+                "  \"app_guid\":     \"" + new UUID(1, 3) + "\"\n" +
                 "}";
 
-        given()
-                .auth().basic(username, password).header(apiVersionHeader)
-                .request().contentType(ContentType.JSON).body(request_body)
-                .when().put(createBindingPath)
+        givenRequest()
+                .contentType(ContentType.JSON).body(request_body)
+                .put(createBindingPath)
                 .then()
                 .statusCode(HttpStatus.SC_CREATED)
         ;
     }
 
     @Test
-    public void case4_removeBindingSucceedsWithCredentials() throws Exception {
-        String removeBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID) + "?service_id=" + serviceId + "&plan_id=" + planId;
-        given().auth().basic(username, password).header(apiVersionHeader).when().delete(removeBindingPath).then().statusCode(HttpStatus.SC_OK);
+    public void case4_removeBindingSucceedsWithCredentials() {
+        String removeBindingPath = String.format(BINDING_BASE_PATH, INSTANCE_ID, BINDING_ID) + "?service_id=" + serviceId + "&plan_id=" + planId;
+        givenRequest().delete(removeBindingPath).then().statusCode(HttpStatus.SC_OK);
     }
 
     @Test
-    public void case5_removeInstanceSucceedsWithCredentials() throws Exception {
-        String removeInstancePath = String.format(provisionOrRemoveInstanceBasePath, instanceId) + "?service_id=" + serviceId + "&plan_id=" + planId;
-        given().auth().basic(username, password).header(apiVersionHeader).when().delete(removeInstancePath).then().statusCode(HttpStatus.SC_OK);
+    public void case5_removeInstanceSucceedsWithCredentials() {
+        String removeInstancePath = String.format(INSTANCE_BASE_PATH, INSTANCE_ID) + "?service_id=" + serviceId + "&plan_id=" + planId;
+        givenRequest().delete(removeInstancePath).then().statusCode(HttpStatus.SC_OK);
     }
+
 }
