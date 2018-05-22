@@ -115,6 +115,4 @@ public class DatabaseBindingService implements ServiceInstanceBindingService {
         return binding;
     }
 
-    //todo: throw ServiceInstanceDoesNotExistException - it is an advised exception, also:
-    //ServiceInstanceBindingExistsException
 }

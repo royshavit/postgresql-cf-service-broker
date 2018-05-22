@@ -69,7 +69,6 @@ public class DatabaseCreationService implements ServiceInstanceService {
         return instance.orElse(null);
     }
 
-    //todo: perhaps should verify that no bindings exist before deleting instance, although cloud foundry should ensure this.
     private void deleteServiceInstance(UUID serviceInstanceId) {
         serviceInstanceRepository.delete(serviceInstanceId);
         databaseRepository.deleteDatabase(serviceInstanceId.toString());
@@ -78,7 +77,7 @@ public class DatabaseCreationService implements ServiceInstanceService {
 
     @Override
     public ServiceInstance updateServiceInstance(UpdateServiceInstanceRequest updateServiceInstanceRequest)
-            throws ServiceInstanceUpdateNotSupportedException, ServiceBrokerException, ServiceInstanceDoesNotExistException { //todo: ServiceInstanceDoesNotExistException is exception advised
+            throws ServiceInstanceUpdateNotSupportedException, ServiceBrokerException, ServiceInstanceDoesNotExistException {
         throw new ServiceInstanceUpdateNotSupportedException("service update not supported");
     }
 

@@ -81,7 +81,6 @@ public class H2DatabaseRepository implements DatabaseRepository {
     @Override
     public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
         log.info("creating user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
-        //todo: test
         queryExecutor(databaseName).update(String.format(elevatedPrivileges ? CREATE_ADMIN_USER : CREATE_USER, username, password));
         Map<String, Object> credentials = buildCredentials(databaseName, username, password);
         log.info("created user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");

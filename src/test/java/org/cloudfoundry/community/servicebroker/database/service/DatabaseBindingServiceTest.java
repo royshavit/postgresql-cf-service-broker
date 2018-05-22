@@ -83,26 +83,28 @@ public class DatabaseBindingServiceTest {
     }
 
     private void assertConnectable(Map<String, Object> credentials) {
-        String url = (String) credentials.get("jdbcurl");
-        List<Map<String, String>> rows = new QueryExecutor(url).select("select 1");
+        List<Map<String, String>> rows = selectOne(credentials);
         assertThat(rows.size(), is(1));
         String result = rows.iterator().next().values().iterator().next();
         assertThat(result, is("1"));
     }
 
     private void assertNotConnectable(Map<String, Object> credentials) {
-        String url = (String) credentials.get("jdbcurl"); //todo: re-use
-        assertThatThrownBy(() ->
-                new QueryExecutor(url).select("select 1")
+        assertThatThrownBy(
+                () -> selectOne(credentials)
         ).isInstanceOf(SQLException.class);
+    }
 
+    private List<Map<String, String>> selectOne(Map<String, Object> credentials) {
+        String url = (String) credentials.get("jdbcurl");
+        return new QueryExecutor(url).select("select 1");
     }
 
     @Test
     public void createServiceInstanceBinding_bindingAlreadyExists_fails() throws ServiceBrokerException, ServiceInstanceExistsException, ServiceInstanceBindingExistsException {
         databaseCreationService.createServiceInstance(CREATE_REQUEST);
         databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
-        
+
         assertThatThrownBy(
                 () -> databaseBindingService.createServiceInstanceBinding(BIND_REQUEST)
         ).isInstanceOf(ServiceInstanceBindingExistsException.class);
@@ -134,5 +136,40 @@ public class DatabaseBindingServiceTest {
 
         assertNotConnectable(credentials);
     }
-//todo: multiple binds
+
+    @Test
+    public void createServiceInstanceBinding_create2bindings_bothCredentialsAreValid() throws ServiceInstanceBindingExistsException, ServiceBrokerException, ServiceInstanceExistsException {
+        databaseCreationService.createServiceInstance(CREATE_REQUEST);
+        String bindingId2 = new UUID(1, 3).toString();
+        CreateServiceInstanceBindingRequest bindRequest2
+                = new CreateServiceInstanceBindingRequest().withServiceInstanceId(INSTANCE_ID).withBindingId(bindingId2);
+
+        ServiceInstanceBinding binding1 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
+        ServiceInstanceBinding binding2 = databaseBindingService.createServiceInstanceBinding(bindRequest2);
+
+        assertThat(binding1.getId(), is(BINDING_ID));
+        assertThat(binding2.getId(), is(bindingId2));
+        assertConnectable(binding1.getCredentials());
+        assertConnectable(binding2.getCredentials());
+    }
+
+    @Test
+    public void deleteServiceInstanceBinding_create2bindings_unboundCredentialsAreInvalidatedBoundCredentialsRemainValid() throws ServiceInstanceBindingExistsException, ServiceBrokerException, ServiceInstanceExistsException {
+        databaseCreationService.createServiceInstance(CREATE_REQUEST);
+        String bindingId2 = new UUID(1, 3).toString();
+        CreateServiceInstanceBindingRequest bindRequest2
+                = new CreateServiceInstanceBindingRequest().withServiceInstanceId(INSTANCE_ID).withBindingId(bindingId2);
+        ServiceInstanceBinding binding1 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
+        ServiceInstanceBinding binding2 = databaseBindingService.createServiceInstanceBinding(bindRequest2);
+        assertThat(binding1.getId(), is(BINDING_ID));
+        assertThat(binding2.getId(), is(bindingId2));
+        assertConnectable(binding1.getCredentials());
+        assertConnectable(binding2.getCredentials());
+
+        databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST);
+
+        assertNotConnectable(binding1.getCredentials());
+        assertConnectable(binding2.getCredentials());
+    }
+
 }
