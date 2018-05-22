@@ -16,17 +16,13 @@
 package org.cloudfoundry.community.servicebroker.database.repository;
 
 import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,26 +35,10 @@ public class ServiceInstanceRepository {
 
     private final QueryExecutor queryExecutor;
 
-    @SneakyThrows
-    @Autowired
-    private void createServiceInstanceTable(DataSource dataSource) { //todo: constructor -> flyway?
-        log.info("creating service instance table");
-        try (Connection connection = dataSource.getConnection()) {
-            String createServiceInstanceTable
-                    = "CREATE TABLE IF NOT EXISTS service (serviceinstanceid varchar(200) not null default '',"
-                    + " servicedefinitionid varchar(200) not null default '',"
-                    + " planid varchar(200) not null default '',"
-                    + " organizationguid varchar(200) not null default '',"
-                    + " spaceguid varchar(200) not null default '')";
-            connection.createStatement().execute(createServiceInstanceTable);
-        }
-        log.info("created service instance table");
-    }
-
     public void save(CreateServiceInstanceRequest serviceInstance) {
         log.info("saving service instance {}", serviceInstance.getServiceInstanceId());
         queryExecutor.update(String.format(
-                "INSERT INTO service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES ('%s', '%s', '%s', '%s', '%s')",
+                "INSERT INTO \"aladin\".service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES ('%s', '%s', '%s', '%s', '%s')",
                 serviceInstance.getServiceInstanceId(),
                 serviceInstance.getServiceDefinitionId(),
                 serviceInstance.getPlanId(),
@@ -69,14 +49,14 @@ public class ServiceInstanceRepository {
 
     public void delete(UUID instanceId) {
         log.info("deleting service instance {}", instanceId);
-        queryExecutor.update("DELETE FROM service WHERE serviceinstanceid = '" + instanceId + "'");
+        queryExecutor.update("DELETE FROM \"aladin\".service WHERE serviceinstanceid = '" + instanceId + "'");
         log.info("deleted service instance {}", instanceId);
     }
 
     public Optional<ServiceInstance> findServiceInstance(UUID instanceId) {
         log.info("locating service instance {}", instanceId);
         List<Map<String, String>> instances = queryExecutor.select(
-                "SELECT * FROM service WHERE serviceinstanceid = '" + instanceId + "'");
+                "SELECT * FROM \"aladin\".service WHERE serviceinstanceid = '" + instanceId + "'");
         Assert.state(instances.size() <= 1, "found multiple instances with id " + instanceId);
         if (instances.isEmpty()) {
             log.info("service instance {} not found", instanceId);

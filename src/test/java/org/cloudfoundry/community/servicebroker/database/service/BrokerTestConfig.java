@@ -2,6 +2,7 @@ package org.cloudfoundry.community.servicebroker.database.service;
 
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -15,7 +16,10 @@ import java.util.Random;
  * Created by taitz.
  */
 @Configuration
-@Import(DataSourceAutoConfiguration.class)
+@Import({
+        DataSourceAutoConfiguration.class,
+        FlywayAutoConfiguration.class,
+})
 @ComponentScan(
         basePackageClasses = {
                 QueryExecutor.class,

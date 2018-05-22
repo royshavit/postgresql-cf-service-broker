@@ -2,6 +2,7 @@ security.user:
   name: user
   password: password
 space.name: dev
+flyway.schemas: aladin
 spring.profiles.active: postgres
 
 ---
