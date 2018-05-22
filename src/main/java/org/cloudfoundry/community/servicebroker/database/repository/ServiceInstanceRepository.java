@@ -38,7 +38,7 @@ public class ServiceInstanceRepository {
     public void save(CreateServiceInstanceRequest serviceInstance) {
         log.info("saving service instance {}", serviceInstance.getServiceInstanceId());
         queryExecutor.update(String.format(
-                "INSERT INTO \"aladin\".service (serviceinstanceid, servicedefinitionid, planid, organizationguid, spaceguid) VALUES ('%s', '%s', '%s', '%s', '%s')",
+                "INSERT INTO \"brokerdb\".serviceinstance (id, service_definition_id, plan_id, org_id, space_id) VALUES ('%s', '%s', '%s', '%s', '%s')",
                 serviceInstance.getServiceInstanceId(),
                 serviceInstance.getServiceDefinitionId(),
                 serviceInstance.getPlanId(),
@@ -49,14 +49,14 @@ public class ServiceInstanceRepository {
 
     public void delete(UUID instanceId) {
         log.info("deleting service instance {}", instanceId);
-        queryExecutor.update("DELETE FROM \"aladin\".service WHERE serviceinstanceid = '" + instanceId + "'");
+        queryExecutor.update("DELETE FROM \"brokerdb\".serviceinstance WHERE id = '" + instanceId + "'");
         log.info("deleted service instance {}", instanceId);
     }
 
     public Optional<ServiceInstance> findServiceInstance(UUID instanceId) {
         log.info("locating service instance {}", instanceId);
         List<Map<String, String>> instances = queryExecutor.select(
-                "SELECT * FROM \"aladin\".service WHERE serviceinstanceid = '" + instanceId + "'");
+                "SELECT * FROM \"brokerdb\".serviceinstance WHERE id = '" + instanceId + "'");
         Assert.state(instances.size() <= 1, "found multiple instances with id " + instanceId);
         if (instances.isEmpty()) {
             log.info("service instance {} not found", instanceId);
