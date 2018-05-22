@@ -21,16 +21,16 @@ import org.cloudfoundry.community.servicebroker.controller.ServiceInstanceBindin
 import org.cloudfoundry.community.servicebroker.controller.ServiceInstanceController;
 import org.cloudfoundry.community.servicebroker.database.controller.DatabaseBindingController;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 
 import java.security.SecureRandom;
 import java.util.Random;
 
-@Configuration
+@SpringBootConfiguration
 @EnableAutoConfiguration(exclude = ServiceBrokerAutoConfiguration.class)
 @ComponentScan(
         basePackages = "org.cloudfoundry.community.servicebroker",

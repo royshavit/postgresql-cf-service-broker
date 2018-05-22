@@ -29,7 +29,7 @@ import static org.junit.Assert.assertThat;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = BrokerTestConfig.class)
-@ActiveProfiles({Consts.H2})
+@ActiveProfiles(Consts.H2)
 public class DatabaseBindingServiceTest {
 
 

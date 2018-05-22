@@ -6,7 +6,6 @@ import com.jayway.restassured.response.Header;
 import com.jayway.restassured.specification.RequestSpecification;
 import org.apache.http.HttpStatus;
 import org.cloudfoundry.community.servicebroker.controller.CatalogController;
-import org.cloudfoundry.community.servicebroker.database.Application;
 import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.model.Catalog;
@@ -18,77 +17,59 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.IntegrationTest;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.context.embedded.LocalServerPort;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@SpringApplicationConfiguration(classes = Application.class) //todo: deprecated
-@RunWith(SpringJUnit4ClassRunner.class)
-@ActiveProfiles({Consts.H2})
-@WebAppConfiguration
-@IntegrationTest("server.port:0")
+@RunWith(SpringRunner.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles(Consts.H2)
 public class DatabaseControllerIT {
 
     private static final UUID INSTANCE_ID = new UUID(1, 1);
     private static final UUID BINDING_ID = new UUID(1, 2);
-    private static final CreateServiceInstanceBindingRequest BIND_REQUEST
-            = new CreateServiceInstanceBindingRequest("a", "b", "")
-            .withServiceInstanceId(INSTANCE_ID.toString())
-            .withBindingId(BINDING_ID.toString());
-    private static final String INSTANCE_BASE_PATH = "/v2/service_instances/%s";
-    private static final String BINDING_BASE_PATH = "/v2/service_instances/%s/service_bindings/%s";
-    private static final String PROVISION_INSTANCE_PATH;
-    private static final String CREATE_BINDING_PATH;
+    private static final String PROVISION_PATH = "/v2/service_instances/" + INSTANCE_ID;
+    private static final String BIND_PATH = PROVISION_PATH + "/service_bindings/" + BINDING_ID;
     private static final Header API_VERSION_HEADER = new Header("X-Broker-Api-Version", CatalogConfig.BROKER_API_VERSION); //todo: use org.cloudfoundry.community.servicebroker.model.BrokerApiVersion
 
-    static {
-        PROVISION_INSTANCE_PATH = String.format(INSTANCE_BASE_PATH, INSTANCE_ID);
-        CREATE_BINDING_PATH = String.format(BINDING_BASE_PATH, INSTANCE_ID, BINDING_ID);
-    }
+    @Value("${security.user.name}")
+    private String username;
 
-    private CreateServiceInstanceRequest createRequest;
-    private Supplier<RequestSpecification> requestSupplier;
-    private String removeBindingPath;
-    private String removeInstancePath;
+    @Value("${security.user.password}")
+    private String password;
 
-    @Autowired
-    private void setupAuthentication(
-            @Value("${security.user.name}") String username,
-            @Value("${security.user.password}") String password) {
-        requestSupplier = () -> given().auth().basic(username, password).header(API_VERSION_HEADER);
-    }
+    private String serviceId;
+    private String deprovisionPath;
+    private String unBindPath;
 
     @Autowired
     private void setupServiceDefinition(@Value("${space.name}") String spaceName) {
-        String serviceId = "pg-" + spaceName;
-        createRequest = new CreateServiceInstanceRequest(serviceId, "a", "b", "c").withServiceInstanceId(INSTANCE_ID.toString());
-        removeInstancePath = PROVISION_INSTANCE_PATH + "?service_id=" + serviceId + "&plan_id=";
-        removeBindingPath = CREATE_BINDING_PATH + "?service_id=" + serviceId + "&plan_id=";
+        serviceId = "pg-" + spaceName;
+        deprovisionPath = PROVISION_PATH + "?service_id=" + serviceId + "&plan_id=";
+        unBindPath = BIND_PATH + "?service_id=" + serviceId + "&plan_id=";
     }
 
     @Autowired
-    private void setPort(@Value("${local.server.port}") int port) {
+    private void setPort(@LocalServerPort int port) {
         RestAssured.port = port;
     }
 
     @Before
     public void cleanup() {
-        givenRequest().delete(removeBindingPath);
-        givenRequest().delete(removeInstancePath);
+        givenRequest().delete(unBindPath);
+        givenRequest().delete(deprovisionPath);
     }
 
     private RequestSpecification givenRequest() {
-        return requestSupplier.get();
+        return given().auth().basic(username, password).header(API_VERSION_HEADER);
     }
 
     @Test
@@ -108,10 +89,13 @@ public class DatabaseControllerIT {
 
     @Test
     public void provision() {
+        CreateServiceInstanceRequest createRequest = new CreateServiceInstanceRequest(serviceId, "a", "b", "c")
+                .withServiceInstanceId(INSTANCE_ID.toString());
+
         givenRequest()
                 .contentType(ContentType.JSON)
                 .body(createRequest)
-                .put(PROVISION_INSTANCE_PATH)
+                .put(PROVISION_PATH)
                 .then()
                 .statusCode(HttpStatus.SC_CREATED)
         ;
@@ -120,11 +104,14 @@ public class DatabaseControllerIT {
     @Test
     public void bind() {
         provision();
+        CreateServiceInstanceBindingRequest bindRequest = new CreateServiceInstanceBindingRequest("a", "b", "")
+                .withServiceInstanceId(INSTANCE_ID.toString())
+                .withBindingId(BINDING_ID.toString());
 
         givenRequest()
                 .contentType(ContentType.JSON)
-                .body(BIND_REQUEST)
-                .put(CREATE_BINDING_PATH)
+                .body(bindRequest)
+                .put(BIND_PATH)
                 .then()
                 .statusCode(HttpStatus.SC_CREATED)
         ;
@@ -135,7 +122,7 @@ public class DatabaseControllerIT {
         bind();
 
         givenRequest()
-                .delete(removeBindingPath)
+                .delete(unBindPath)
                 .then()
                 .statusCode(HttpStatus.SC_OK)
         ;
@@ -146,7 +133,7 @@ public class DatabaseControllerIT {
         provision();
 
         givenRequest()
-                .delete(removeInstancePath)
+                .delete(deprovisionPath)
                 .then()
                 .statusCode(HttpStatus.SC_OK)
         ;
