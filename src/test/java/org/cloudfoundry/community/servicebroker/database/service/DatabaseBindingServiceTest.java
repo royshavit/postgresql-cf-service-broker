@@ -134,5 +134,5 @@ public class DatabaseBindingServiceTest {
 
         assertNotConnectable(credentials);
     }
-
+//todo: multiple binds
 }

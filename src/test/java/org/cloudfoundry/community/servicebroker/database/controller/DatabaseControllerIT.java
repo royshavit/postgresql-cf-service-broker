@@ -1,11 +1,14 @@
-package org.cloudfoundry.community.servicebroker;
+package org.cloudfoundry.community.servicebroker.database.controller;
 
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Header;
+import com.jayway.restassured.response.ValidatableResponse;
 import org.apache.http.HttpStatus;
+import org.cloudfoundry.community.servicebroker.database.Application;
 import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
+import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -14,14 +17,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.IntegrationTest;
+import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 import javax.annotation.PostConstruct;
+import java.util.Collections;
 import java.util.UUID;
 
 import static com.jayway.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.equalTo;
 
 /**
  * Abstract test base class for the Service Broker V2 API.
@@ -37,12 +43,13 @@ import static com.jayway.restassured.RestAssured.given;
  *
  * This would cause JUnit to run the methods in name-ascending order, causing the cases to run in order.
  */
+@SpringApplicationConfiguration(classes = Application.class) //todo: deprecated
 @RunWith(SpringJUnit4ClassRunner.class)
 @ActiveProfiles({Consts.H2})
 @WebAppConfiguration
 @IntegrationTest("server.port:0")
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public abstract class ServiceBrokerV2ITBase {
+public class DatabaseControllerIT {
 
     @Value("${local.server.port}")
     protected int port;
@@ -95,33 +102,25 @@ public abstract class ServiceBrokerV2ITBase {
         
     }
 
-    /**
-     * cf marketplace
-     * cf create-service-broker
-     * <p>
-     * Fetch Catalog (GET /v2/catalog)
-     */
-
-    @Test
-    public void case1_fetchCatalogFailsWithoutCredentials() throws Exception {
-        given().auth().none().when().get(fetchCatalogPath).then().statusCode(HttpStatus.SC_UNAUTHORIZED);
-    }
-
     @Test
     public void case1_fetchCatalogSucceedsWithCredentials() throws Exception {
         given().auth().basic(username, password).header(apiVersionHeader).when().get(fetchCatalogPath).then().statusCode(HttpStatus.SC_OK);
-    }
 
-    /**
-     * cf create-service
-     * <p>
-     * Provision Instance (PUT /v2/service_instances/:id)
-     */
 
-    @Test
-    public void case2_provisionInstanceFailsWithoutCredentials() throws Exception {
-        String provisionInstancePath = String.format(provisionOrRemoveInstanceBasePath, instanceId);
-        given().auth().none().when().put(provisionInstancePath).then().statusCode(HttpStatus.SC_UNAUTHORIZED);
+        // same as super code, but we need the response here
+        ValidatableResponse response = given().auth().basic(username, password).header(apiVersionHeader).when().get(fetchCatalogPath).then().statusCode(HttpStatus.SC_OK);
+
+        CatalogConfig catalogConfig = new CatalogConfig();
+        ServiceDefinition serviceDefinition = catalogConfig.catalog().getServiceDefinitions().get(0);
+
+        response.body("services[0].id", equalTo("pg-" + spaceName));
+        response.body("services[0].name", equalTo("pgshared-" + spaceName));
+        response.body("services[0].description", equalTo(serviceDefinition.getDescription()));
+        response.body("services[0].requires", equalTo(serviceDefinition.getRequires()));
+        response.body("services[0].tags", equalTo(serviceDefinition.getTags()));
+        response.body("services[0].plans.id", equalTo(Collections.singletonList("free-" + spaceName)));
+
+
     }
 
     @Test
@@ -135,18 +134,6 @@ public abstract class ServiceBrokerV2ITBase {
                 "}";
 
         given().auth().basic(username, password).header(apiVersionHeader).request().contentType(ContentType.JSON).body(request_body).when().put(provisionInstancePath).then().statusCode(HttpStatus.SC_CREATED);
-    }
-
-    /**
-     * cf bind-service
-     * <p>
-     * Create Binding (PUT /v2/service_instances/:instance_id/service_bindings/:id)
-     */
-
-    @Test
-    public void case3_createBindingFailsWithoutCredentials() throws Exception {
-        String createBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID);
-        given().auth().none().when().put(createBindingPath).then().statusCode(HttpStatus.SC_UNAUTHORIZED);
     }
 
     @Test
@@ -167,34 +154,10 @@ public abstract class ServiceBrokerV2ITBase {
         ;
     }
 
-    /**
-     * cf unbind-service
-     * <p>
-     * Remove Binding (DELETE /v2/service_instances/:instance_id/service_bindings/:id)
-     */
-
-    @Test
-    public void case4_removeBindingFailsWithoutCredentials() throws Exception {
-        String removeBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID) + "?service_id=" + serviceId + "&plan_id=" + planId;
-        given().auth().none().when().delete(removeBindingPath).then().statusCode(HttpStatus.SC_UNAUTHORIZED);
-    }
-
     @Test
     public void case4_removeBindingSucceedsWithCredentials() throws Exception {
         String removeBindingPath = String.format(createOrRemoveBindingBasePath, instanceId, BINDING_ID) + "?service_id=" + serviceId + "&plan_id=" + planId;
         given().auth().basic(username, password).header(apiVersionHeader).when().delete(removeBindingPath).then().statusCode(HttpStatus.SC_OK);
-    }
-
-    /**
-     * cf delete-service
-     * <p>
-     * Remove Instance (DELETE /v2/service_instances/:id)
-     */
-
-    @Test
-    public void case5_removeInstanceFailsWithoutCredentials() throws Exception {
-        String removeInstancePath = String.format(provisionOrRemoveInstanceBasePath, instanceId) + "?service_id=" + serviceId + "&plan_id=" + planId;
-        given().auth().none().when().delete(removeInstancePath).then().statusCode(HttpStatus.SC_UNAUTHORIZED);
     }
 
     @Test
