@@ -8,10 +8,7 @@ import org.apache.http.HttpStatus;
 import org.cloudfoundry.community.servicebroker.controller.CatalogController;
 import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
-import org.cloudfoundry.community.servicebroker.model.Catalog;
-import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
-import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
-import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
+import org.cloudfoundry.community.servicebroker.model.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,7 +35,8 @@ public class DatabaseControllerIT {
     private static final UUID BINDING_ID = new UUID(1, 2);
     private static final String PROVISION_PATH = "/v2/service_instances/" + INSTANCE_ID;
     private static final String BIND_PATH = PROVISION_PATH + "/service_bindings/" + BINDING_ID;
-    private static final Header API_VERSION_HEADER = new Header("X-Broker-Api-Version", CatalogConfig.BROKER_API_VERSION); //todo: use org.cloudfoundry.community.servicebroker.model.BrokerApiVersion
+    private static final Header API_VERSION_HEADER
+            = new Header(BrokerApiVersion.DEFAULT_API_VERSION_HEADER, CatalogConfig.BROKER_API_VERSION);
 
     @Value("${security.user.name}")
     private String username;

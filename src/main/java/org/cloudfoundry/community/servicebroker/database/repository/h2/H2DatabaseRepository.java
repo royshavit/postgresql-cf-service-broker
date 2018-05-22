@@ -47,16 +47,12 @@ public class H2DatabaseRepository implements DatabaseRepository {
     }
 
 
-    private QueryExecutor queryExecutor(String url) {
-        return new QueryExecutor(url);
-    }
-
     @SneakyThrows
     @Override
     public void createDatabase(String databaseName) {
         log.info("creating database {}", databaseName);
         String url = String.format(CREATE_DATABASE_URL, databaseName, databaseName, masterPassword);
-        List<Map<String, String>> rows = queryExecutor(url).select("select 1");
+        List<Map<String, String>> rows = new QueryExecutor(url).select("select 1");
         validateConnection(databaseName, rows);
         log.info("created database {}", databaseName);
     }
@@ -68,12 +64,16 @@ public class H2DatabaseRepository implements DatabaseRepository {
         Assert.state(result.equals("1"), errorMessage);
     }
 
+    private QueryExecutor queryExecutor(String databaseName) {
+        String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
+        return new QueryExecutor(url);
+    }
+
     @SneakyThrows
     @Override
     public void deleteDatabase(String databaseName) {
         log.info("deleting database {}", databaseName);
-        String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword); //todo: repeating urls
-        queryExecutor(url).update("SHUTDOWN");
+        queryExecutor(databaseName).update("SHUTDOWN");
         log.info("deleted database {}", databaseName);
     }
 
@@ -81,9 +81,8 @@ public class H2DatabaseRepository implements DatabaseRepository {
     @Override
     public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
         log.info("creating user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
-        String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
         //todo: test
-        queryExecutor(url).update(String.format(elevatedPrivileges ? CREATE_ADMIN_USER : CREATE_USER, username, password));
+        queryExecutor(databaseName).update(String.format(elevatedPrivileges ? CREATE_ADMIN_USER : CREATE_USER, username, password));
         Map<String, Object> credentials = buildCredentials(databaseName, username, password);
         log.info("created user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         return credentials;
@@ -93,16 +92,14 @@ public class H2DatabaseRepository implements DatabaseRepository {
     @Override
     public void deleteUser(String databaseName, String username) {
         log.info("deleting user {} of database {}", username, databaseName);
-        String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
-        queryExecutor(url).update("DROP USER \"" + username + "\"");
+        queryExecutor(databaseName).update("DROP USER \"" + username + "\"");
         log.info("deleted user {} of database {}", username, databaseName);
     }
 
     @Override
     public boolean userExists(String databaseName, String username) {
-        String url = String.format(JDBC_URL, databaseName, databaseName, masterPassword);
         List<Map<String, String>> result
-                = queryExecutor(url).select("select 1 from information_schema.users where name = '" + username + "'");
+                = queryExecutor(databaseName).select("select 1 from information_schema.users where name = '" + username + "'");
         return result.size() >= 1;
     }
 
