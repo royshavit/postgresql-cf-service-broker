@@ -2,7 +2,6 @@ package org.cloudfoundry.community.servicebroker.database.service;
 
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
-import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceDoesNotExistException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceExistsException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceUpdateNotSupportedException;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
@@ -20,6 +19,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.cloudfoundry.community.servicebroker.database.service.Exceptions.swallowException;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -45,11 +45,7 @@ public class DatabaseCreationServiceTest {
 
     @Before
     public void clean() {
-        try {
-            databaseCreationService.deleteServiceInstance(DELETE_REQUEST);
-        } catch (Exception e) {
-            System.out.println("failed to delete service instance " + INSTANCE_ID + " due to " + e.getMessage());
-        }
+        swallowException(() -> databaseCreationService.deleteServiceInstance(DELETE_REQUEST));
     }
 
     @Test

@@ -1,6 +1,5 @@
 package org.cloudfoundry.community.servicebroker.database.service;
 
-import org.assertj.core.api.ThrowableAssert;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
@@ -21,6 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.cloudfoundry.community.servicebroker.database.service.Exceptions.swallowException;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -61,14 +61,6 @@ public class DatabaseBindingServiceTest {
         swallowException(() -> databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST1));
         swallowException(() -> databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST2));
         swallowException(() -> databaseCreationService.deleteServiceInstance(DELETE_REQUEST));
-    }
-
-    private void swallowException(ThrowableAssert.ThrowingCallable throwingCallable) {
-        try {
-            throwingCallable.call();
-        } catch (Throwable e) {
-            System.out.println("failed to clean due to " + e.getMessage());
-        }
     }
 
 
