@@ -67,14 +67,17 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     @Override
     public void deleteDatabase(String databaseName) {
         log.info("deleting database {}", databaseName);
-        List<Map<String, String>> terminatedConnections = queryExecutor.select(
-                "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity " +
-                        "WHERE pg_stat_activity.datname = '" + databaseName + "' AND pid <> pg_backend_pid()");
+        List<Map<String, String>> terminatedConnections = queryExecutor.select(terminateConnections(databaseName));
         log.warn("terminated {} connections to {}", terminatedConnections.size(), databaseName);
         queryExecutor.update(setOwner(databaseName, masterUsername));
         queryExecutor.update("DROP DATABASE \"" + databaseName + "\"");
         queryExecutor.update(deleteRole(databaseName));
         log.info("deleted database {}", databaseName);
+    }
+
+    private String terminateConnections(String databaseName) {
+        return "SELECT pg_terminate_backend(pid) FROM pg_stat_activity" +
+                " WHERE datname = '" + databaseName + "' AND pid <> pg_backend_pid()";
     }
 
     @Override
@@ -110,6 +113,9 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     @Override
     public void deleteUser(String databaseName, String username) {
         log.info("deleting user {} of database {}", username, databaseName);
+        List<Map<String, String>> terminatedConnections = queryExecutor.select(
+                terminateConnections(databaseName) + " AND usename = '" + username + "'");
+        log.warn("terminated {} connections of user {} to database {}", terminatedConnections.size(), username, databaseName);
         queryExecutor.update(deleteRole(username));
         log.info("deleted user {} of database {}", username, databaseName);
     }

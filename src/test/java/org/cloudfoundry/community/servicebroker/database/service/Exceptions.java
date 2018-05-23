@@ -8,7 +8,7 @@ class Exceptions {
         try {
             throwingCallable.call();
         } catch (Throwable e) {
-            System.out.println("failed to run " + throwingCallable + "due to " + e.getMessage());
+            System.out.println("failed to run " + throwingCallable + " due to - " + e.getMessage());
         }
     }
 }

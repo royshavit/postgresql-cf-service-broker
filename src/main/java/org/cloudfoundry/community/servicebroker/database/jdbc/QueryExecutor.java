@@ -36,7 +36,6 @@ public class QueryExecutor {
         return DriverManager.getConnection(url);
     }
 
-
     @SneakyThrows
     public void update(String query) {
         try (Connection connection = connectionSupplier.get()) {
