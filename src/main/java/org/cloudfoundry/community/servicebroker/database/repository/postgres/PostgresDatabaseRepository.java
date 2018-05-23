@@ -60,7 +60,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         queryExecutor.update(createRole(databaseName));
         queryExecutor.update("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
         queryExecutor.update("REVOKE all on database \"" + databaseName + "\" from public");
-        queryExecutor.update("ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + databaseName + "\"");
+        queryExecutor.update(setOwner(databaseName, databaseName));
         log.info("created database {}", databaseName);
     }
 
@@ -70,6 +70,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         queryExecutor.select(
                 "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity " +
                         "WHERE pg_stat_activity.datname = '" + databaseName + "' AND pid <> pg_backend_pid()");
+        queryExecutor.update(setOwner(databaseName, masterUsername));
         queryExecutor.update("DROP DATABASE \"" + databaseName + "\"");
         queryExecutor.update(deleteRole(databaseName));
         log.info("deleted database {}", databaseName);
@@ -81,12 +82,16 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         queryExecutor.update(createRole(username));
         queryExecutor.update(grantRole(databaseName, username));
         if (elevatedPrivileges) {
-            queryExecutor.update(grantRole(masterUsername, username)); //todo: WITH ADMIN OPTION
+            queryExecutor.update(grantRole(masterUsername, username));
         }
         queryExecutor.update("ALTER ROLE \"" + username + "\" LOGIN password '" + password + "'");
         Map<String, Object> credentials = buildCredentials(databaseName, username, password);
         log.info("created user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         return credentials;
+    }
+
+    private String setOwner(String databaseName, String owner) {
+        return "ALTER DATABASE \"" + databaseName + "\" OWNER TO \"" + owner + "\"";
     }
 
     private String createRole(String role) {

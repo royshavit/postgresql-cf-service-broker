@@ -47,10 +47,10 @@ public class DatabaseCreationService implements ServiceInstanceService {
             throws ServiceInstanceExistsException, ServiceBrokerException {
         UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
         serviceInstanceRepository.findServiceInstance(serviceInstanceId).ifPresent(this::throwAlreadyExistsException); 
-        log.info("creating instance {}", serviceInstanceId);
-        databaseRepository.createDatabase(serviceInstanceId.toString());
+        log.info("provisioning {}", serviceInstanceId);
         serviceInstanceRepository.save(createServiceInstanceRequest);
-        log.info("created instance {}", serviceInstanceId);
+        databaseRepository.createDatabase(serviceInstanceId.toString());
+        log.info("provisioned {}", serviceInstanceId);
         return new ServiceInstance(createServiceInstanceRequest);
     }
 
@@ -63,16 +63,16 @@ public class DatabaseCreationService implements ServiceInstanceService {
     public ServiceInstance deleteServiceInstance(DeleteServiceInstanceRequest deleteServiceInstanceRequest)
             throws ServiceBrokerException {
         UUID serviceInstanceId = UUID.fromString(deleteServiceInstanceRequest.getServiceInstanceId());
-        log.info("deleting instance {}", serviceInstanceId);
+        log.info("deprovisioning {}", serviceInstanceId);
         Optional<ServiceInstance> instance = serviceInstanceRepository.findServiceInstance(serviceInstanceId);
         instance.ifPresent(serviceInstance -> deleteServiceInstance(serviceInstanceId));
         return instance.orElse(null);
     }
 
     private void deleteServiceInstance(UUID serviceInstanceId) {
-        serviceInstanceRepository.delete(serviceInstanceId);
         databaseRepository.deleteDatabase(serviceInstanceId.toString());
-        log.info("deleted instance {}", serviceInstanceId);
+        serviceInstanceRepository.delete(serviceInstanceId);
+        log.info("deprovisioned {}", serviceInstanceId);
     }
 
     @Override

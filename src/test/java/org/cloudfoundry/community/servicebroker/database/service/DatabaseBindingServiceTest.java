@@ -1,5 +1,6 @@
 package org.cloudfoundry.community.servicebroker.database.service;
 
+import org.assertj.core.api.ThrowableAssert;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
@@ -34,15 +35,20 @@ public class DatabaseBindingServiceTest {
 
 
     private static final String INSTANCE_ID = new UUID(1, 1).toString();
-    private static final String BINDING_ID = new UUID(1, 2).toString();
+    private static final String BINDING_ID1 = new UUID(1, 2).toString();
+    private static final String BINDING_ID2 = new UUID(1, 3).toString();
     private static final CreateServiceInstanceRequest CREATE_REQUEST
             = new CreateServiceInstanceRequest().withServiceInstanceId(INSTANCE_ID);
     private static final DeleteServiceInstanceRequest DELETE_REQUEST
             = new DeleteServiceInstanceRequest(INSTANCE_ID, "", "");
-    private static final CreateServiceInstanceBindingRequest BIND_REQUEST
-            = new CreateServiceInstanceBindingRequest().withServiceInstanceId(INSTANCE_ID).withBindingId(BINDING_ID);
-    private static final DeleteServiceInstanceBindingRequest UNBIND_REQUEST
-            = new DeleteServiceInstanceBindingRequest(BINDING_ID, new ServiceInstance(DELETE_REQUEST), "", "");
+    private static final CreateServiceInstanceBindingRequest BIND_REQUEST1
+            = new CreateServiceInstanceBindingRequest().withServiceInstanceId(INSTANCE_ID).withBindingId(BINDING_ID1);
+    private static final CreateServiceInstanceBindingRequest BIND_REQUEST2
+            = new CreateServiceInstanceBindingRequest().withServiceInstanceId(INSTANCE_ID).withBindingId(BINDING_ID2);
+    private static final DeleteServiceInstanceBindingRequest UNBIND_REQUEST1
+            = new DeleteServiceInstanceBindingRequest(BINDING_ID1, new ServiceInstance(DELETE_REQUEST), "", "");
+    private static final DeleteServiceInstanceBindingRequest UNBIND_REQUEST2
+            = new DeleteServiceInstanceBindingRequest(BINDING_ID2, new ServiceInstance(DELETE_REQUEST), "", "");
 
     @Autowired
     private DatabaseCreationService databaseCreationService;
@@ -52,15 +58,16 @@ public class DatabaseBindingServiceTest {
 
     @Before
     public void clean() {
+        swallowException(() -> databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST1));
+        swallowException(() -> databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST2));
+        swallowException(() -> databaseCreationService.deleteServiceInstance(DELETE_REQUEST));
+    }
+
+    private void swallowException(ThrowableAssert.ThrowingCallable throwingCallable) {
         try {
-            databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST);
-        } catch (Exception e) {
-            System.out.println("failed to unbind binding " + BINDING_ID + " due to " + e.getMessage());
-        }
-        try {
-            databaseCreationService.deleteServiceInstance(DELETE_REQUEST);
-        } catch (Exception e) {
-            System.out.println("failed to delete service instance " + INSTANCE_ID + " due to " + e.getMessage());
+            throwingCallable.call();
+        } catch (Throwable e) {
+            System.out.println("failed to clean due to " + e.getMessage());
         }
     }
 
@@ -68,7 +75,7 @@ public class DatabaseBindingServiceTest {
     @Test
     public void createServiceInstanceBinding_instanceDoesNotExist_fails() {
         assertThatThrownBy(
-                () -> databaseBindingService.createServiceInstanceBinding(BIND_REQUEST)
+                () -> databaseBindingService.createServiceInstanceBinding(BIND_REQUEST1)
         ).isInstanceOf(ServiceBrokerException.class);
     }
 
@@ -76,9 +83,9 @@ public class DatabaseBindingServiceTest {
     public void createServiceInstanceBinding_bindingDoesNotExist_returnsCredentials() throws ServiceInstanceBindingExistsException, ServiceBrokerException, ServiceInstanceExistsException {
         databaseCreationService.createServiceInstance(CREATE_REQUEST);
 
-        ServiceInstanceBinding binding = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
+        ServiceInstanceBinding binding = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST1);
 
-        assertThat(binding.getId(), is(BINDING_ID));
+        assertThat(binding.getId(), is(BINDING_ID1));
         assertConnectable(binding.getCredentials());
     }
 
@@ -103,17 +110,17 @@ public class DatabaseBindingServiceTest {
     @Test
     public void createServiceInstanceBinding_bindingAlreadyExists_fails() throws ServiceBrokerException, ServiceInstanceExistsException, ServiceInstanceBindingExistsException {
         databaseCreationService.createServiceInstance(CREATE_REQUEST);
-        databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
+        databaseBindingService.createServiceInstanceBinding(BIND_REQUEST1);
 
         assertThatThrownBy(
-                () -> databaseBindingService.createServiceInstanceBinding(BIND_REQUEST)
+                () -> databaseBindingService.createServiceInstanceBinding(BIND_REQUEST1)
         ).isInstanceOf(ServiceInstanceBindingExistsException.class);
     }
 
     @Test
     public void deleteServiceInstanceBinding_instanceDoesNotExists_fails() {
         assertThatThrownBy(
-                () -> databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST)
+                () -> databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST1)
         ).isInstanceOf(ServiceBrokerException.class);
     }
 
@@ -121,7 +128,7 @@ public class DatabaseBindingServiceTest {
     public void deleteServiceInstanceBinding_bindingDoesNotExist_returnsNull() throws ServiceBrokerException, ServiceInstanceExistsException {
         databaseCreationService.createServiceInstance(CREATE_REQUEST);
 
-        ServiceInstanceBinding binding = databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST);
+        ServiceInstanceBinding binding = databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST1);
 
         assertNull(binding);
     }
@@ -129,10 +136,10 @@ public class DatabaseBindingServiceTest {
     @Test
     public void deleteServiceInstanceBinding_bindingExists_revokesCredentials() throws ServiceBrokerException, ServiceInstanceExistsException, ServiceInstanceBindingExistsException {
         databaseCreationService.createServiceInstance(CREATE_REQUEST);
-        Map<String, Object> credentials = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST).getCredentials();
+        Map<String, Object> credentials = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST1).getCredentials();
         assertConnectable(credentials);
 
-        databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST);
+        databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST1);
 
         assertNotConnectable(credentials);
     }
@@ -140,15 +147,12 @@ public class DatabaseBindingServiceTest {
     @Test
     public void createServiceInstanceBinding_create2bindings_bothCredentialsAreValid() throws ServiceInstanceBindingExistsException, ServiceBrokerException, ServiceInstanceExistsException {
         databaseCreationService.createServiceInstance(CREATE_REQUEST);
-        String bindingId2 = new UUID(1, 3).toString();
-        CreateServiceInstanceBindingRequest bindRequest2
-                = new CreateServiceInstanceBindingRequest().withServiceInstanceId(INSTANCE_ID).withBindingId(bindingId2);
 
-        ServiceInstanceBinding binding1 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
-        ServiceInstanceBinding binding2 = databaseBindingService.createServiceInstanceBinding(bindRequest2);
+        ServiceInstanceBinding binding1 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST1);
+        ServiceInstanceBinding binding2 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST2);
 
-        assertThat(binding1.getId(), is(BINDING_ID));
-        assertThat(binding2.getId(), is(bindingId2));
+        assertThat(binding1.getId(), is(BINDING_ID1));
+        assertThat(binding2.getId(), is(BINDING_ID2));
         assertConnectable(binding1.getCredentials());
         assertConnectable(binding2.getCredentials());
     }
@@ -156,17 +160,14 @@ public class DatabaseBindingServiceTest {
     @Test
     public void deleteServiceInstanceBinding_create2bindings_unboundCredentialsAreInvalidatedBoundCredentialsRemainValid() throws ServiceInstanceBindingExistsException, ServiceBrokerException, ServiceInstanceExistsException {
         databaseCreationService.createServiceInstance(CREATE_REQUEST);
-        String bindingId2 = new UUID(1, 3).toString();
-        CreateServiceInstanceBindingRequest bindRequest2
-                = new CreateServiceInstanceBindingRequest().withServiceInstanceId(INSTANCE_ID).withBindingId(bindingId2);
-        ServiceInstanceBinding binding1 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
-        ServiceInstanceBinding binding2 = databaseBindingService.createServiceInstanceBinding(bindRequest2);
-        assertThat(binding1.getId(), is(BINDING_ID));
-        assertThat(binding2.getId(), is(bindingId2));
+        ServiceInstanceBinding binding1 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST1);
+        ServiceInstanceBinding binding2 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST2);
+        assertThat(binding1.getId(), is(BINDING_ID1));
+        assertThat(binding2.getId(), is(BINDING_ID2));
         assertConnectable(binding1.getCredentials());
         assertConnectable(binding2.getCredentials());
 
-        databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST);
+        databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST1);
 
         assertNotConnectable(binding1.getCredentials());
         assertConnectable(binding2.getCredentials());
