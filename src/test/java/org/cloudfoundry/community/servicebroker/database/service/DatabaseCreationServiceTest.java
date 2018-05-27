@@ -11,23 +11,32 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.sql.*;
+import java.util.Arrays;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.cloudfoundry.community.servicebroker.database.service.Exceptions.swallowException;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeThat;
 
 /**
  * Created by taitz.
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = BrokerTestConfig.class)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.NONE,
+        classes = BrokerTestConfig.class,
+        properties = "database.connections.max=3")
 @ActiveProfiles(Consts.H2)
 public class DatabaseCreationServiceTest {
 
@@ -49,6 +58,12 @@ public class DatabaseCreationServiceTest {
 
     @Autowired
     private DatabaseBindingService databaseBindingService;
+
+    @Autowired
+    private Environment environment;
+
+    @Value("${database.connections.max}")
+    private int dbConnectionsMax;
 
     @Before
     public void clean() {
@@ -125,19 +140,31 @@ public class DatabaseCreationServiceTest {
     public void deleteServiceInstance_openConnectionExists_databaseIsDeleted() throws ServiceBrokerException, ServiceInstanceExistsException, ServiceInstanceBindingExistsException, SQLException {
         databaseCreationService.createServiceInstance(CREATE_REQUEST);
         ServiceInstanceBinding binding = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
-        String url = (String) binding.getCredentials().get("jdbcurl"); 
+        String url = (String) binding.getCredentials().get("jdbcurl");
         try (Connection connection = getConnection(url)) {
             try (Statement statement = connection.createStatement()) {
                 ResultSet result = statement.executeQuery("select 1");
                 assertTrue(result.next());
 
                 databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST);
-                databaseCreationService.deleteServiceInstance(DELETE_REQUEST); 
-                
+                databaseCreationService.deleteServiceInstance(DELETE_REQUEST);
+
                 assertThatThrownBy(() -> statement.executeQuery("select 1")).isInstanceOf(SQLException.class);
             }
-        } 
-        assertThatThrownBy(() -> getConnection(url)).isInstanceOf(SQLException.class); 
+        }
+        assertThatThrownBy(() -> getConnection(url)).isInstanceOf(SQLException.class);
+    }
+
+    @Test
+    public void createServiceInstance_maxConnectionsIsSet_maxConnectionsIsEnforced() throws ServiceBrokerException, ServiceInstanceExistsException, ServiceInstanceBindingExistsException, SQLException {
+        assumeThat(Arrays.asList(environment.getActiveProfiles()), hasItem(Consts.POSTGRES));
+        databaseCreationService.createServiceInstance(CREATE_REQUEST);
+        ServiceInstanceBinding binding = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
+        String url = (String) binding.getCredentials().get("jdbcurl");
+
+        IntStream.rangeClosed(1, dbConnectionsMax).forEach(value -> getConnection(url));
+
+        assertThatThrownBy(() -> getConnection(url)).isInstanceOf(SQLException.class);
     }
 
     @SneakyThrows

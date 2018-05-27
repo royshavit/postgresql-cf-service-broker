@@ -7,7 +7,7 @@ import java.util.Map;
  */
 public interface DatabaseRepository {
 
-    void createDatabase(String databaseName);
+    void createDatabase(String databaseName, int databaseConnectionsMax);
 
     void deleteDatabase(String databaseName);
 

@@ -55,10 +55,11 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     }
 
     @Override
-    public void createDatabase(String databaseName) {
+    public void createDatabase(String databaseName, int databaseConnectionsMax) {
         log.info("creating database {}", databaseName);
         queryExecutor.update(createRole(databaseName));
         queryExecutor.update("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
+        queryExecutor.update("ALTER DATABASE \"" + databaseName + "\" CONNECTION LIMIT " + databaseConnectionsMax);
         queryExecutor.update("REVOKE all on database \"" + databaseName + "\" from public");
         queryExecutor.update(setOwner(databaseName, databaseName));
         log.info("created database {}", databaseName);

@@ -49,7 +49,7 @@ public class H2DatabaseRepository implements DatabaseRepository {
 
     @SneakyThrows
     @Override
-    public void createDatabase(String databaseName) {
+    public void createDatabase(String databaseName, int databaseConnectionsMax) {
         log.info("creating database {}", databaseName);
         String url = String.format(CREATE_DATABASE_URL, databaseName, databaseName, masterPassword);
         List<Map<String, String>> rows = new QueryExecutor(url).select("select 1");

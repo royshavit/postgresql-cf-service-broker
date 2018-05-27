@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(Consts.H2)
-public class DatabaseControllerIT {
+public class DatabaseBrokerControllerIT {
 
     private static final UUID INSTANCE_ID = new UUID(1, 1);
     private static final UUID BINDING_ID = new UUID(1, 2);

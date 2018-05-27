@@ -15,7 +15,6 @@
  */
 package org.cloudfoundry.community.servicebroker.database.service;
 
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
@@ -29,6 +28,7 @@ import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceReque
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.model.UpdateServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -36,20 +36,29 @@ import java.util.UUID;
 
 @Service
 @Slf4j
-@AllArgsConstructor
 public class DatabaseCreationService implements ServiceInstanceService {
 
     private final DatabaseRepository databaseRepository;
     private final ServiceInstanceRepository serviceInstanceRepository;
+    private final int databaseConnectionsMax;
+
+    public DatabaseCreationService(
+            DatabaseRepository databaseRepository,
+            ServiceInstanceRepository serviceInstanceRepository,
+            @Value("${database.connections.max:-1}") int databaseConnectionsMax) {
+        this.databaseRepository = databaseRepository;
+        this.serviceInstanceRepository = serviceInstanceRepository;
+        this.databaseConnectionsMax = databaseConnectionsMax;
+    }
 
     @Override
     public ServiceInstance createServiceInstance(CreateServiceInstanceRequest createServiceInstanceRequest)
             throws ServiceInstanceExistsException, ServiceBrokerException {
         UUID serviceInstanceId = UUID.fromString(createServiceInstanceRequest.getServiceInstanceId());
-        serviceInstanceRepository.findServiceInstance(serviceInstanceId).ifPresent(this::throwAlreadyExistsException); 
+        serviceInstanceRepository.findServiceInstance(serviceInstanceId).ifPresent(this::throwAlreadyExistsException);
         log.info("provisioning {}", serviceInstanceId);
         serviceInstanceRepository.save(createServiceInstanceRequest);
-        databaseRepository.createDatabase(serviceInstanceId.toString());
+        databaseRepository.createDatabase(serviceInstanceId.toString(), databaseConnectionsMax);
         log.info("provisioned {}", serviceInstanceId);
         return new ServiceInstance(createServiceInstanceRequest);
     }
