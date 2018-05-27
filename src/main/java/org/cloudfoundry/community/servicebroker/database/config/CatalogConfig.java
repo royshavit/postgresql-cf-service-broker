@@ -31,8 +31,6 @@ import java.util.*;
 @Configuration
 public class CatalogConfig {
 
-    public static final String BROKER_API_VERSION = "2.12";
-
     @Value("${space.name}")
     private String spaceName;
 
@@ -85,7 +83,7 @@ public class CatalogConfig {
 
     @Bean
     public BrokerApiVersion brokerApiVersion() {
-        return new BrokerApiVersion(BROKER_API_VERSION);
+        return new BrokerApiVersion(BrokerApiVersion.API_VERSION_ANY);
     }
 
 }

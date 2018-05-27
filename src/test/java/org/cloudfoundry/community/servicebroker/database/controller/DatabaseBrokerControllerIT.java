@@ -6,7 +6,6 @@ import com.jayway.restassured.response.Header;
 import com.jayway.restassured.specification.RequestSpecification;
 import org.apache.http.HttpStatus;
 import org.cloudfoundry.community.servicebroker.controller.CatalogController;
-import org.cloudfoundry.community.servicebroker.database.config.CatalogConfig;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.model.*;
 import org.junit.Before;
@@ -35,8 +34,7 @@ public class DatabaseBrokerControllerIT {
     private static final UUID BINDING_ID = new UUID(1, 2);
     private static final String PROVISION_PATH = "/v2/service_instances/" + INSTANCE_ID;
     private static final String BIND_PATH = PROVISION_PATH + "/service_bindings/" + BINDING_ID;
-    private static final Header API_VERSION_HEADER
-            = new Header(BrokerApiVersion.DEFAULT_API_VERSION_HEADER, CatalogConfig.BROKER_API_VERSION);
+    private static final Header API_VERSION_HEADER = new Header(BrokerApiVersion.DEFAULT_API_VERSION_HEADER, "2.12");
 
     @Value("${security.user.name}")
     private String username;
