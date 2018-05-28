@@ -1,87 +1,83 @@
-# Cloud Foundry Service Broker for a PostgreSQL instance [![Build Status](https://travis-ci.org/cloudfoundry-community/postgresql-cf-service-broker.svg?branch=master)](https://travis-ci.org/cloudfoundry-community/postgresql-cf-service-broker)
+# Cloud Foundry Service Broker for a PostgreSQL instance
 
-A Cloud Foundry Service Broker for a PostgreSQL instance built based on [s3-cf-service-broker](https://github.com/cloudfoundry-community/s3-cf-service-broker).
+A Cloud Foundry Service Broker for a PostgreSQL instance forked from [postgresql-cf-service-broker
+](https://github.com/cloudfoundry-community/postgresql-cf-service-broker).
 
 The broker currently publishes a single service and plan for provisioning PostgreSQL databases.
 
 ## Design 
 
-The broker uses a PostgreSQL table for it's meta data. It does not maintain an internal database so it has no dependencies besides PostgreSQL.
+The broker uses a PostgresSQL table for it's meta data. It does not maintain an internal database so it has no dependencies besides PostgreSQL.
 
 Capability with the Cloud Foundry service broker API is indicated by the project version number. For example, version 2.4.0 is based off the 2.4 version of the broker API.
 
-## Running
-
-Simply run the JAR file and provide a PostgreSQL jdbc url via the `MASTER_JDBC_URL` environment variable.
-
-### Locally
-
-```
-mvn package && MASTER_JDBC_URL=jdbcurl java -jar target/postgresql-cf-service-broker-2.4.0-SNAPSHOT.jar
-```
-
-### In Cloud Foundry
-
-Find out the database subnet and create a security group rule (postgresql.json):
-```
-[{"protocol":"tcp","destination":"10.10.8.0/24","ports":"5432"}]
-```
-
-import this into CF with:
-```
-cf create-security-group postgresql-service postgresql.json
-```
-
-Bind to the full cf install:
-```
-cf bind-running-security-group postgresql-service
-```
+The broker connects to a provided Postgres server.  
+For each service instance provisioned, the broker will create a database within that Postgres server.  
+Each application that binds to a given service instance, will receive its own credentials to that service instance's database.
 
 
-Build the package with `mvn package` then push it out:
+## How to build
 ```
-cf push postgresql-cf-service-broker -p target/postgresql-cf-service-broker-2.4.0-SNAPSHOT.jar --no-start
-```
-
-Export the following environment variables:
-
-```
-cf set-env postgresql-cf-service-broker MASTER_JDBC_URL "jdbcurl"
-cf set-env postgresql-cf-service-broker JAVA_OPTS "-Dsecurity.user.password=mysecret"
+mvn clean install
 ```
 
+## How to run locally
+Provide a PostgreSQL jdbc url and run the JAR file:
+```
+spring_datasource_url=<jdbc-url> java -jar target/postgresql-cf-service-broker-2.4.0-SNAPSHOT.jar
+```
+
+## How to run in Cloud Foundry
+Push the application:
+```
+cf push postgres-broker --no-start
+```
+Provide the jdbc url of the Postgres server:
+```
+cf set-env postgres-broker spring_datasource_url jdbc:postgresql://<hostname>:<port>/<database-name>?user=<user-name>&password=<password>
+```
+Provide the name of the Cloud Foundry space to which the broker has been pushed. This is used to determine catalog service and plan identifiers. It prevents naming conflicts when the broker is deployed to multiple spaces.
+```
+cf set-env postgres-broker space_name <write-your-space-name-here>
+```
+Optional - if you wish to grant elevated privileges to applications that will bind to this service, for instance to allow an application to create a Postgres extension:
+```
+cf set-env postgres-broker grant_users_elevated_privileges true
+```
+Optional - if you wish to limit the number of open connections to each database, e.g. to a maximum of 25 connections:
+```
+cf set-env postgres-broker database_connections_max 25
+```
+Optional - override the default broker credentials (username "user", password "password"):
+```
+cf set-env postgres-broker security.user.name <choose-a-user-name>
+cf set-env postgres-broker security.user.password <choose-a-password>
+```
 Start the service broker:
 ```
-cf start postgresql-cf-service-broker
+cf start postgres-broker
 ```
-
-Create Cloud Foundry service broker:
+Either - register the service broker in the current space only:
 ```
-cf create-service-broker postgresql-cf-service-broker user mysecret http://postgresql-cf-service-broker.cfapps.io
+cf create-service-broker postgres-broker <broker-username> <broker-password> https://<broker-url> --space-scoped
 ```
-
-Add service broker to Cloud Foundry Marketplace:
+Or - register the service broker in the entire Cloud Foundry Marketplace:
 ```
-cf enable-service-access PostgreSQL -p "Basic PostgreSQL Plan" -o ORG
+cf create-service-broker postgres-broker <broker-username> <broker-password> https://<broker-url>
+cf enable-service-access pgshared-<space-name> -p free
 ```
 
 ## Testing
-
-### Locally
-
+To run all tests:
+```
+mvn test
+```
 You need to have a running PostgreSQL 9.x instance for this to work locally.
 To create an PostgreSQL database matching the ```MASTER_JDBC_URL``` in ```src/test/resources/application.properties```:
 ```
 docker run  -p 5432:5432/tcp --name testpostgres --rm -e POSTGRES_DB=travis_ci_test -e  POSTGRES_PASSWORD= -e POSTGRES_USER=postgres postgres
 ```
 
-Then run:
-```
-mvn test
-```
-
-### In Travis CI
-The configuration for the test can be found in ```src/test/resources/application.properties``` and should match the configuration in Travis CI (```.travis.yml```).
 
 ## Using the services in your application
 
@@ -91,7 +87,7 @@ The credentials provided in a bind call have the following format:
 
 ```
 "credentials":{
-	"uri":"postgres://__username__:__password__@__hostname__:__port__/__database__"
+	"uri":"postgresql://__username__:__password__@__hostname__:__port__/__database__"
 }
 ```
 
