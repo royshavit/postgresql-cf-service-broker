@@ -15,7 +15,7 @@ import org.springframework.stereotype.Controller;
 @Slf4j
 @Controller
 public class DatabaseCreationController extends ServiceInstanceController {
-    
+
     public DatabaseCreationController(ServiceInstanceService service, CatalogService catalogService) {
         super(service, catalogService);
     }
