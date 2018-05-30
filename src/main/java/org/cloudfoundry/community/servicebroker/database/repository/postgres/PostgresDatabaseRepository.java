@@ -63,7 +63,9 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     public void createDatabase(String databaseName, int databaseConnectionsMax) {
         log.info("creating database {} with {} max connections", databaseName, databaseConnectionsMax);
         queryExecutor.update(createRole(databaseName));
-        queryExecutor.update(grantRole(databaseName, masterUsername)); //to allow the "SET role" command below 
+        if (elevatedPrivileges) {
+            queryExecutor.update(grantRole(masterUsername, databaseName));
+        }
         queryExecutor.update("CREATE DATABASE \"" + databaseName + "\" ENCODING 'UTF8'");
         queryExecutor.update("ALTER DATABASE \"" + databaseName + "\" CONNECTION LIMIT " + databaseConnectionsMax);
         queryExecutor.update("REVOKE all on database \"" + databaseName + "\" from public");
@@ -92,12 +94,10 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         log.info("creating user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         queryExecutor.update(createRole(username));
         queryExecutor.update(grantRole(databaseName, username));
-        queryExecutor.update("ALTER ROLE \"" + username + "\" SET role \"" + databaseName + "\""); //If user owns database objects, user cannot be deleted. Logging in as parent role allows database objects created by this user to be owned by parent role.
-        if (elevatedPrivileges) {
-            queryExecutor.update(grantRole(masterUsername, username));
-        }
         queryExecutor.update("ALTER ROLE \"" + username + "\" LOGIN password '" + password + "'");
         Map<String, Object> credentials = buildCredentials(databaseName, username, password);
+        QueryExecutor newUserQueryExecutor = new QueryExecutor((String) credentials.get("jdbcurl"));
+        newUserQueryExecutor.update("ALTER ROLE \"" + username + "\" SET role \"" + databaseName + "\""); //If user owns database objects, user cannot be deleted. Logging in as parent role allows database objects created by this user to be owned by parent role.
         log.info("created user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         return credentials;
     }
