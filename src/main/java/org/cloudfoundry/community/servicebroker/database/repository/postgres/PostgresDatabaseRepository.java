@@ -21,6 +21,7 @@ import org.apache.tomcat.jdbc.pool.DataSource;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.database.repository.DatabaseRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -39,13 +40,17 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     private static final String JDBC_URL = "jdbc:postgresql://%s:%d/%s?user=%s&password=%s";
 
     private final QueryExecutor queryExecutor;
+    private final boolean elevatedPrivileges;
     private final String masterDbHost;
     private final int masterDbPort;
     private final String masterUsername;
 
     @SneakyThrows
-    public PostgresDatabaseRepository(QueryExecutor queryExecutor, DataSource masterDataSource) {
+    public PostgresDatabaseRepository(QueryExecutor queryExecutor,
+                                      DataSource masterDataSource,
+                                      @Value("${database.privileges.elevated}") boolean grantUsersElevatedPrivileges) {
         this.queryExecutor = queryExecutor;
+        elevatedPrivileges = grantUsersElevatedPrivileges;
         URI uri = new URI(new URI(masterDataSource.getUrl()).getSchemeSpecificPart());
         masterDbPort = uri.getPort();
         masterDbHost = uri.getHost();
@@ -83,7 +88,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
     }
 
     @Override
-    public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
+    public Map<String, Object> createUser(String databaseName, String username, String password) {
         log.info("creating user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         queryExecutor.update(createRole(username));
         queryExecutor.update(grantRole(databaseName, username));

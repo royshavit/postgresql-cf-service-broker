@@ -40,10 +40,13 @@ public class H2DatabaseRepository implements DatabaseRepository {
     private static final String CREATE_ADMIN_USER = CREATE_USER + " ADMIN";
 
     private final String masterPassword;
+    private final boolean elevatedPrivileges;
 
 
-    public H2DatabaseRepository(@Value("${spring.datasource.password}") String masterPassword) {
+    public H2DatabaseRepository(@Value("${spring.datasource.password}") String masterPassword,
+                                @Value("${database.privileges.elevated}") boolean grantUsersElevatedPrivileges) {
         this.masterPassword = masterPassword;
+        elevatedPrivileges = grantUsersElevatedPrivileges;
     }
 
 
@@ -79,7 +82,7 @@ public class H2DatabaseRepository implements DatabaseRepository {
 
     @SneakyThrows
     @Override
-    public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
+    public Map<String, Object> createUser(String databaseName, String username, String password) {
         log.info("creating user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         queryExecutor(databaseName).update(String.format(elevatedPrivileges ? CREATE_ADMIN_USER : CREATE_USER, username, password));
         queryExecutor(databaseName).update("grant alter any schema to \"" + username + "\"");

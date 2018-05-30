@@ -11,7 +11,7 @@ public interface DatabaseRepository {
 
     void deleteDatabase(String databaseName);
 
-    Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges);
+    Map<String, Object> createUser(String databaseName, String username, String password);
 
     void deleteUser(String databaseName, String username);
     

@@ -25,7 +25,6 @@ import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceBindi
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigInteger;
@@ -41,16 +40,11 @@ public class DatabaseBindingService implements ServiceInstanceBindingService {
     private final DatabaseRepository databaseRepository;
     private final ServiceInstanceRepository serviceInstanceRepository;
     private final Random random;
-    private final boolean grantUsersElevatedPrivileges;
 
-    public DatabaseBindingService(DatabaseRepository databaseRepository,
-                                  ServiceInstanceRepository serviceInstanceRepository,
-                                  Random random,
-                                  @Value("${database.privileges.elevated:false}") boolean grantUsersElevatedPrivileges) {
+    public DatabaseBindingService(DatabaseRepository databaseRepository, ServiceInstanceRepository serviceInstanceRepository, Random random) {
         this.databaseRepository = databaseRepository;
         this.serviceInstanceRepository = serviceInstanceRepository;
         this.random = random;
-        this.grantUsersElevatedPrivileges = grantUsersElevatedPrivileges;
     }
 
     @Override
@@ -71,7 +65,7 @@ public class DatabaseBindingService implements ServiceInstanceBindingService {
         log.info("creating binding {} for instance {}", bindingId, serviceInstanceId);
         String password = new BigInteger(130, random).toString(32);
         Map<String, Object> credentials = databaseRepository.createUser(
-                serviceInstanceId.toString(), bindingId, password, grantUsersElevatedPrivileges);
+                serviceInstanceId.toString(), bindingId, password);
         ServiceInstanceBinding binding = getServiceInstanceBinding(
                 createServiceInstanceBindingRequest, serviceInstanceId, bindingId, credentials);
         log.info("created binding {} for instance {}", bindingId, serviceInstanceId);
