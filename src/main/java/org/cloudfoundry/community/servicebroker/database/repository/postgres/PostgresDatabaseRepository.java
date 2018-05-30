@@ -86,6 +86,7 @@ public class PostgresDatabaseRepository implements DatabaseRepository {
         log.info("creating user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         queryExecutor.update(createRole(username));
         queryExecutor.update(grantRole(databaseName, username));
+        queryExecutor.update("ALTER ROLE \"" + username + "\" SET role \"" + databaseName + "\"");
         if (elevatedPrivileges) {
             queryExecutor.update(grantRole(masterUsername, username));
         }

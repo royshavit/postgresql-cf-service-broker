@@ -82,6 +82,7 @@ public class H2DatabaseRepository implements DatabaseRepository {
     public Map<String, Object> createUser(String databaseName, String username, String password, boolean elevatedPrivileges) {
         log.info("creating user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         queryExecutor(databaseName).update(String.format(elevatedPrivileges ? CREATE_ADMIN_USER : CREATE_USER, username, password));
+        queryExecutor(databaseName).update("grant alter any schema to \"" + username + "\"");
         Map<String, Object> credentials = buildCredentials(databaseName, username, password);
         log.info("created user {} for database {} with{} elevated privileges", username, databaseName, elevatedPrivileges ? "" : "out");
         return credentials;

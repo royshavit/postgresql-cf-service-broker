@@ -1,5 +1,6 @@
 package org.cloudfoundry.community.servicebroker.database.service;
 
+import lombok.SneakyThrows;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
@@ -11,19 +12,20 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.cloudfoundry.community.servicebroker.database.service.BrokerTestConfig.assumePostgresProfile;
 import static org.cloudfoundry.community.servicebroker.database.service.Exceptions.swallowException;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 /**
  * Created by taitz.
@@ -55,6 +57,9 @@ public class DatabaseBindingServiceTest {
 
     @Autowired
     private DatabaseBindingService databaseBindingService;
+
+    @Autowired
+    private Environment environment;
 
     @Before
     public void clean() {
@@ -163,6 +168,41 @@ public class DatabaseBindingServiceTest {
 
         assertNotConnectable(binding1.getCredentials());
         assertConnectable(binding2.getCredentials());
+    }
+
+    @Test
+    public void deleteServiceInstanceBinding_createSchema_schemaRemains() throws ServiceInstanceBindingExistsException, ServiceBrokerException, ServiceInstanceExistsException, SQLException {
+        assumePostgresProfile(environment);
+        databaseCreationService.createServiceInstance(CREATE_REQUEST);
+        ServiceInstanceBinding binding1 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST1);
+        ServiceInstanceBinding binding2 = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST2);
+        String url1 = (String) binding1.getCredentials().get("jdbcurl");
+        String url2 = (String) binding2.getCredentials().get("jdbcurl");
+        String schema = "fruit";
+        String table = schema + ".date";
+        String rowValue = "medjool";
+        try (Connection connection = getConnection(url1)) {
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("create schema " + schema);
+                statement.execute("create table " + table + " (name varchar(36) not null)");
+                statement.execute("insert into " + table + " values ('" + rowValue + "')");
+            }
+        }
+
+        databaseBindingService.deleteServiceInstanceBinding(UNBIND_REQUEST1);
+
+        try (Connection connection = getConnection(url2)) {
+            try (Statement statement = connection.createStatement()) {
+                ResultSet result = statement.executeQuery("select * from " + table);
+                assertTrue(result.next());
+                assertThat(result.getString(1), is(rowValue));
+            }
+        }
+    }
+
+    @SneakyThrows
+    private Connection getConnection(String url) {
+        return DriverManager.getConnection(url);
     }
 
 }

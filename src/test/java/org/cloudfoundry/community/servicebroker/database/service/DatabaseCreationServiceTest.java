@@ -18,16 +18,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.sql.*;
-import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.cloudfoundry.community.servicebroker.database.service.BrokerTestConfig.assumePostgresProfile;
 import static org.cloudfoundry.community.servicebroker.database.service.Exceptions.swallowException;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.core.IsCollectionContaining.hasItem;
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeThat;
 
 /**
  * Created by taitz.
@@ -157,7 +155,7 @@ public class DatabaseCreationServiceTest {
 
     @Test
     public void createServiceInstance_maxConnectionsIsSet_maxConnectionsIsEnforced() throws ServiceBrokerException, ServiceInstanceExistsException, ServiceInstanceBindingExistsException, SQLException {
-        assumeThat(Arrays.asList(environment.getActiveProfiles()), hasItem(Consts.POSTGRES));
+        assumePostgresProfile(environment);
         databaseCreationService.createServiceInstance(CREATE_REQUEST);
         ServiceInstanceBinding binding = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST);
         String url = (String) binding.getCredentials().get("jdbcurl");
