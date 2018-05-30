@@ -46,7 +46,7 @@ public class DatabaseBindingService implements ServiceInstanceBindingService {
     public DatabaseBindingService(DatabaseRepository databaseRepository,
                                   ServiceInstanceRepository serviceInstanceRepository,
                                   Random random,
-                                  @Value("${grant.users.elevated.privileges:false}") boolean grantUsersElevatedPrivileges) {
+                                  @Value("${database.privileges.elevated:false}") boolean grantUsersElevatedPrivileges) {
         this.databaseRepository = databaseRepository;
         this.serviceInstanceRepository = serviceInstanceRepository;
         this.random = random;

@@ -3,6 +3,7 @@ security.user:
   password: password
 space.name: dev
 flyway.schemas: brokerdb
+database.privileges.elevated: false
 spring.profiles.active: postgres
 
 ---

@@ -1,5 +1,6 @@
 package org.cloudfoundry.community.servicebroker.database.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.cloudfoundry.community.servicebroker.database.jdbc.QueryExecutor;
 import org.cloudfoundry.community.servicebroker.database.repository.Consts;
@@ -8,18 +9,20 @@ import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceBinding
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceExistsException;
 import org.cloudfoundry.community.servicebroker.model.*;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.TestContextManager;
 
+import javax.sql.DataSource;
 import java.sql.*;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.cloudfoundry.community.servicebroker.database.service.BrokerTestConfig.assumePostgresProfile;
@@ -30,7 +33,8 @@ import static org.junit.Assert.*;
 /**
  * Created by taitz.
  */
-@RunWith(SpringRunner.class)
+@RunWith(Parameterized.class)
+@RequiredArgsConstructor
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes = BrokerTestConfig.class)
 @ActiveProfiles(Consts.H2)
 public class DatabaseBindingServiceTest {
@@ -52,6 +56,9 @@ public class DatabaseBindingServiceTest {
     private static final DeleteServiceInstanceBindingRequest UNBIND_REQUEST2
             = new DeleteServiceInstanceBindingRequest(BINDING_ID2, new ServiceInstance(DELETE_REQUEST), "", "");
 
+    private final boolean elevatedPrivileges;
+    private static boolean elevatedPrivilegesPreviousValue;
+
     @Autowired
     private DatabaseCreationService databaseCreationService;
 
@@ -60,6 +67,34 @@ public class DatabaseBindingServiceTest {
 
     @Autowired
     private Environment environment;
+
+    private String masterUsername;
+
+    @Autowired
+    private void getMasterUsername(DataSource masterDataSource) throws SQLException {
+        try (Connection connection = masterDataSource.getConnection()) {
+            masterUsername = connection.getMetaData().getUserName();
+        }
+    }
+
+    @Parameterized.Parameters(name = "elevated privileges - {0}")
+    public static Collection<Object[]> input() {
+        return Arrays.asList(new Object[][]{
+                {false},
+                {true},
+        });
+    }
+
+    @Before
+    public void setUpContext() throws Exception {
+        System.setProperty("database.privileges.elevated", String.valueOf(elevatedPrivileges));
+        TestContextManager testContextManager = new TestContextManager(getClass());
+        if (elevatedPrivileges != elevatedPrivilegesPreviousValue) {
+            elevatedPrivilegesPreviousValue = elevatedPrivileges;
+            testContextManager.getTestContext().markApplicationContextDirty(DirtiesContext.HierarchyMode.CURRENT_LEVEL);
+        }
+        testContextManager.prepareTestInstance(this);
+    }
 
     @Before
     public void clean() {
@@ -196,6 +231,27 @@ public class DatabaseBindingServiceTest {
                 ResultSet result = statement.executeQuery("select * from " + table);
                 assertTrue(result.next());
                 assertThat(result.getString(1), is(rowValue));
+            }
+        }
+    }
+
+    @Test
+    public void createServiceInstanceBinding_setPrivilegedRole_succeedsOnlyIfElevatedPrivilegesSet() throws SQLException, ServiceBrokerException, ServiceInstanceExistsException, ServiceInstanceBindingExistsException {
+        assumePostgresProfile(environment);
+        databaseCreationService.createServiceInstance(CREATE_REQUEST);
+        ServiceInstanceBinding binding = databaseBindingService.createServiceInstanceBinding(BIND_REQUEST1);
+        String url = (String) binding.getCredentials().get("jdbcurl");
+
+        try (Connection connection = getConnection(url)) {
+            try (Statement statement = connection.createStatement()) {
+                String setPrivilegedRole = "set role " + masterUsername;
+                if (elevatedPrivileges) {
+                    statement.execute(setPrivilegedRole);
+                } else {
+                    assertThatThrownBy(
+                            () -> statement.execute(setPrivilegedRole)
+                    ).isInstanceOf(SQLException.class);
+                }
             }
         }
     }

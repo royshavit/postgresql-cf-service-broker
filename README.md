@@ -44,7 +44,7 @@ How to run in Cloud Foundry
    ```
 1. Optional - grant elevated privileges to applications that will bind to this service, for instance to allow an application to create a Postgres extension:
    ```
-   cf set-env postgres-broker grant_users_elevated_privileges true
+   cf set-env postgres-broker database_privileges_elevated true
    ```
 1. Optional - limit the number of open connections to each database, e.g. to a maximum of 25 connections:
    ```
