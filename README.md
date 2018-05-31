@@ -105,3 +105,16 @@ Usage
          "username": "username"
     }
     ```
+
+Modifications since fork from parent project
+--------------------------------------------
+A list of key modifications:
+1. Each bind call returns unique credentials (whereas previously a bind call would revoke the password of a previous bind call).
+1. A bind call returns more detailed credentials.
+1. Configurable elevated permissions to allow, for instance `CREATE EXTENSION btree_gist`
+1. Configurable maximum connection limit.
+1. Supports H2 inmemory database and is extendable to any database.
+1. Extensive testing, error handling and logging.
+1. Connection pooling.
+1. Space dependent catalog.
+1. Flyway for handling tenancy schema.
