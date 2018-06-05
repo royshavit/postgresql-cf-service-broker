@@ -38,9 +38,9 @@ How to run in Cloud Foundry
    ```
    cf set-env postgres-broker spring_datasource_url jdbc:postgresql://<hostname>:<port>/<database-name>?user=<user-name>&password=<password>
    ```
-1. Provide the name of the Cloud Foundry space to which the broker has been pushed. This is used to determine catalog service and plan identifiers. It prevents naming conflicts when the broker is deployed to multiple spaces.
+1. Optional - override the default catalog:
    ```
-   cf set-env postgres-broker space_name <write-your-space-name-here>
+   cf set-env postgres-broker catalog '<catalog-as-single-line-json>'
    ```
 1. Optional - grant elevated privileges to applications that will bind to this service, for instance to allow an application to create a Postgres extension:
    ```
@@ -66,7 +66,7 @@ How to run in Cloud Foundry
    Or - register the service broker in the entire Cloud Foundry Marketplace:
    ```
    cf create-service-broker postgres-broker <broker-username> <broker-password> https://<broker-url>
-   cf enable-service-access pgshared-<space-name> -p free
+   cf enable-service-access postgres-shared -p free
    ```
 
 How to run tests
@@ -83,7 +83,7 @@ Usage
 -----
 1.  Create a Postgres instance:
     ```
-    cf create-service pgshared-<space-name> free pg1
+    cf create-service postgres-shared free pg1
     ```
 1.  Bind an application to the Postgres instance:
     ```
@@ -116,5 +116,5 @@ A list of key modifications:
 1. Supports H2 inmemory database and is extendable to any database.
 1. Extensive testing, error handling and logging.
 1. Connection pooling.
-1. Space dependent catalog.
+1. Configurable catalog.
 1. Flyway for handling tenancy schema.

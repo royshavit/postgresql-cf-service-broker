@@ -47,8 +47,8 @@ public class DatabaseBrokerControllerIT {
     private String unBindPath;
 
     @Autowired
-    private void setupServiceDefinition(@Value("${space.name}") String spaceName) {
-        serviceId = "pg-" + spaceName;
+    private void setupServiceDefinition(Catalog catalog) {
+        serviceId = catalog.getServiceDefinitions().iterator().next().getId();
         deprovisionPath = PROVISION_PATH + "?service_id=" + serviceId + "&plan_id=";
         unBindPath = BIND_PATH + "?service_id=" + serviceId + "&plan_id=";
     }

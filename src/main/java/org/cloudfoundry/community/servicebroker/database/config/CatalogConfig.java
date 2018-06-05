@@ -15,10 +15,10 @@
  */
 package org.cloudfoundry.community.servicebroker.database.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.cloudfoundry.community.servicebroker.model.BrokerApiVersion;
 import org.cloudfoundry.community.servicebroker.model.Catalog;
-import org.cloudfoundry.community.servicebroker.model.Plan;
-import org.cloudfoundry.community.servicebroker.model.ServiceDefinition;
 import org.cloudfoundry.community.servicebroker.service.BeanCatalogService;
 import org.cloudfoundry.community.servicebroker.service.CatalogService;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,13 +26,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
-import java.util.*;
 
+@Slf4j
 @Configuration
 public class CatalogConfig {
-
-    @Value("${space.name}")
-    private String spaceName;
 
     @Bean
     public CatalogService beanCatalogService(Catalog catalog) {
@@ -40,50 +37,14 @@ public class CatalogConfig {
     }
 
     @Bean
-    public Catalog catalog() throws IOException {
-        ServiceDefinition serviceDefinition = new ServiceDefinition(
-                "pg-" + spaceName,
-                "pgshared-" + spaceName,
-                "PostgreSQL on shared instance.",
-                true, false, getPlans(), getTags(), getServiceDefinitionMetadata(), Collections.singletonList("syslog_drain"), null);
-        return new Catalog(Collections.singletonList(serviceDefinition));
-    }
-
-    private static List<String> getTags() {
-        return Arrays.asList("PostgreSQL", "Database storage");
-    }
-
-    private static Map<String, Object> getServiceDefinitionMetadata() {
-        Map<String, Object> sdMetadata = new HashMap<>();
-        sdMetadata.put("displayName", "PostgreSQL");
-        sdMetadata.put("imageUrl", "https://wiki.postgresql.org/images/3/30/PostgreSQL_logo.3colors.120x120.png");
-        sdMetadata.put("longDescription", "PostgreSQL Service");
-        sdMetadata.put("providerDisplayName", "PostgreSQL");
-        sdMetadata.put("documentationUrl", "http://mendix.com/postgresql");
-        sdMetadata.put("supportUrl", "https://support.mendix.com");
-        return sdMetadata;
-    }
-
-    private List<Plan> getPlans() {
-        Plan basic = new Plan("free-" + spaceName, "free",
-                "A PG plan providing a single database on a shared instance with limited storage.",
-                getBasicPlanMetadata(), true);
-        return Collections.singletonList(basic);
-    }
-
-    private static Map<String, Object> getBasicPlanMetadata() {
-        Map<String, Object> planMetadata = new HashMap<>();
-        planMetadata.put("bullets", getBasicPlanBullets());
-        return planMetadata;
-    }
-
-    private static List<String> getBasicPlanBullets() {
-        return Arrays.asList("Single PG database", "Limited storage", "Shared instance");
+    public BrokerApiVersion brokerApiVersion() {
+        return new BrokerApiVersion(BrokerApiVersion.API_VERSION_ANY);
     }
 
     @Bean
-    public BrokerApiVersion brokerApiVersion() {
-        return new BrokerApiVersion(BrokerApiVersion.API_VERSION_ANY);
+    public Catalog getCatalog(@Value("${catalog}") String catalogJson) throws IOException {
+        log.info("using catalog - {}", catalogJson);
+        return new ObjectMapper().readValue(catalogJson, Catalog.class);
     }
 
 }

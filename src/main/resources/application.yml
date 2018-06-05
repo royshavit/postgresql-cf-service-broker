@@ -3,7 +3,7 @@ server:
 security.user:
   name: user
   password: password
-space.name: dev
+catalog: '{"services":[{"id":"postgres-shared","name":"postgres-shared","description":"PostgreSQL on shared instance.","bindable":true,"plan_updateable":false,"plans":[{"id":"free::postgres-shared","name":"free","description":"A PostgreSQL plan providing a single database on a shared instance with limited storage.","metadata":{"bullets":["Single PG database","Limited storage","Shared instance"]},"free":true}],"tags":["PostgreSQL","Database storage"],"metadata":{"longDescription":"PostgreSQL Service","documentationUrl":"http://mendix.com/postgresql","providerDisplayName":"PostgreSQL","displayName":"PostgreSQL","imageUrl":"https://wiki.postgresql.org/images/3/30/PostgreSQL_logo.3colors.120x120.png","supportUrl":"https://support.mendix.com"},"requires":["syslog_drain"],"dashboard_client":null}]}'
 flyway.schemas: brokerdb
 database.privileges.elevated: false
 spring:
