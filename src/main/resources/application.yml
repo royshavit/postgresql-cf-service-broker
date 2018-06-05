@@ -6,7 +6,13 @@ security.user:
 space.name: dev
 flyway.schemas: brokerdb
 database.privileges.elevated: false
-spring.profiles.active: postgres
+spring:
+  profiles:
+    active: postgres
+  datasource:
+    tomcat:
+      maxActive: 3
+      minIdle: 0
 
 ---
 spring:
