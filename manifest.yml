@@ -2,8 +2,9 @@
 random-route: true
 buildpack: https://github.com/martinSaad/cfJavaBuildPack_newRelic.git
 path: target/postgresql-cf-service-broker-2.4.0-SNAPSHOT.jar
-memory: 3G
+memory: 700M
+disk: 200M
 timeout: 180
-instances: 2
+instances: 1
 applications:
   - name: postgres-broker
