@@ -36,7 +36,7 @@ import java.util.Map;
 @Slf4j
 public class PostgresDatabaseRepository implements DatabaseRepository {
 
-    private static final String POSTGRES_URL = "postgresql://%s:%s@%s:%d/%s";
+    private static final String POSTGRES_URL = "postgres://%s:%s@%s:%d/%s";
     private static final String JDBC_URL = "jdbc:postgresql://%s:%d/%s?user=%s&password=%s";
 
     private final QueryExecutor queryExecutor;
