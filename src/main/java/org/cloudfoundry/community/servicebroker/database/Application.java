@@ -19,7 +19,6 @@ import org.cloudfoundry.community.servicebroker.config.ServiceBrokerAutoConfigur
 import org.cloudfoundry.community.servicebroker.controller.CatalogController;
 import org.cloudfoundry.community.servicebroker.controller.ServiceInstanceBindingController;
 import org.cloudfoundry.community.servicebroker.controller.ServiceInstanceController;
-import org.cloudfoundry.community.servicebroker.database.controller.DatabaseBindingController;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -43,7 +42,7 @@ import java.util.Random;
                 })
         }
 )
-@ComponentScan(basePackageClasses = DatabaseBindingController.class)
+@ComponentScan(basePackageClasses = Application.class)
 public class Application {
 
     public static void main(String[] args) {
