@@ -61,7 +61,7 @@ pipeline {
                   ls -lhtr target
                   echo "Starting to deploy"
                   echo "Domain: ${DOMAIN}  APP_NAME: ${APP_NAME} PREFIX: ${PREFIX} BUILD_NUMBER: ${BUILD_NUMBER}"
-                  . common.sh
+                  . ${PWD}/common.sh
                   startUp ${DOMAIN}
                   echo "---" > tmp
                   echo "inherit: manifest.yml" > tmp
