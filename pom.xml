@@ -15,6 +15,17 @@
         <spring-boot-cf-service-broker.version>2.6.0</spring-boot-cf-service-broker.version>
     </properties>
 
+    <distributionManagement>
+        <repository>
+            <id>dawec.releases</id>
+            <url>https://devcloud.swcoe.ge.com/artifactory/DAWEC</url>
+        </repository>
+        <snapshotRepository>
+            <id>dawec.snapshots</id>
+            <url>https://devcloud.swcoe.ge.com/artifactory/DAWEC-SNAPSHOT</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.postgresql</groupId>
