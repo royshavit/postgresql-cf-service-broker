@@ -59,10 +59,6 @@ pipeline {
                 sh """
                   chmod -R 777 *
                   ls -lhtr target
-                  echo "Starting to deploy"
-                  echo "Domain: ${DOMAIN}  APP_NAME: ${APP_NAME} PREFIX: ${PREFIX} BUILD_NUMBER: ${BUILD_NUMBER}"
-                  . ${PWD}/common.sh
-                  startUp ${DOMAIN}
                   echo "---" > tmp
                   echo "inherit: manifest.yml" > tmp
                   echo "env:" > tmp
@@ -75,6 +71,7 @@ pipeline {
                   echo -n "  database_connections_max: " > tmp
                   echo "${CONNECTIONS}: " > tmp
                   cat tmp
+                  ./pgdeploy.sh target/audit-subscriber-${VERSION}.jar ${DOMAIN} ${APP_NAME} "audit-subscriber" ${BUILD_NUMBER} ${PREFIX}
 
                   echo "Deploy finished!"
                 """
