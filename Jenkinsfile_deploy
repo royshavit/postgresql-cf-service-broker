@@ -1,0 +1,85 @@
+def artUploadServer = Artifactory.server('dawec')
+
+pipeline {
+    agent {
+        docker {
+          image 'registry.gear.ge.com/dig-propel/predixci-jdk8-ubuntu'
+          label 'dind'
+        }
+    }
+
+    stages {
+        stage('Clean src'){
+            steps {
+                sh 'rm -rf src/*'
+            }
+        }
+
+        stage('Clone Private Config'){
+            steps {
+                 dir('deploy_scripts') {
+                     git credentialsId: 'shimi-carmeli', url: 'https://github.build.ge.com/AuditService/audit-private-config.git', branch: '${BRANCH}'
+                 }
+            }
+        }
+
+        stage('Gathering all files together'){
+            steps {
+                sh 'cp -r deploy_scripts/* .'
+                sh 'rm -Rf deploy_scripts'
+            }
+        }
+
+        stage ('Download Artifacts To Deploy') {
+            environment {
+                PATTERN_PATH = "net/mendix/broker/postgresql-cf-service-broker/${VERSION}"
+                FILE = "postgresql-cf-service-broker-${VERSION}.jar"
+            }
+            steps {
+               script {
+                    def downloadSpec = """{
+                        "files": [
+                            {
+                                "pattern": "${ARTIFACTORY}/${PATTERN_PATH}/${FILE}",
+                                "target": "./target/${FILE}"
+                            }
+                        ]
+                    }"""
+                    def publishedInfo = artUploadServer.download(downloadSpec)
+                    artUploadServer.publishBuildInfo(publishedInfo)
+                    sh 'mv "target/${PATTERN_PATH}/${FILE}" target/.'
+                    sh 'ls -lhtr target'
+               }
+            }
+
+        }
+
+        stage('Deploy to CF') {
+            steps {
+                sh """
+                  chmod -R 777 *
+                  ls -lhtr target
+                  echo "Starting to deploy"
+                  echo "Domain: ${DOMAIN}  APP_NAME: ${APP_NAME} PREFIX: ${PREFIX} BUILD_NUMBER: ${BUILD_NUMBER}"
+                  source common.sh
+                  startUp ${DOMAIN}
+                  echo "---" > tmp
+                  echo "inherit: manifest.yml" > tmp
+                  echo "env:" > tmp
+                  echo -n "  spring_datasource_url: " > tmp
+                  echo "${PGURL}: " > tmp
+                  echo -n "  catalog: " > tmp
+                  echo "${CATALOG}: " > tmp
+                  echo -n "  database_privileges_elevated: " > tmp
+                  echo "${PRIVILEGED}: " > tmp
+                  echo -n "  database_connections_max: " > tmp
+                  echo "${CONNECTIONS}: " > tmp
+                  cat tmp
+
+                  echo "Deploy finished!"
+                """
+            }
+        }
+
+    }
+}
