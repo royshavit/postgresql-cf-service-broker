@@ -59,20 +59,7 @@ pipeline {
                 sh """
                   chmod -R 777 *
                   ls -lhtr target
-                  echo "---" > tmp
-                  echo "inherit: manifest.yml" > tmp
-                  echo "env:" > tmp
-                  echo -n "  spring_datasource_url: " > tmp
-                  echo "${PGURL}: " > tmp
-                  echo -n "  catalog: " > tmp
-                  echo "${CATALOG}: " > tmp
-                  echo -n "  database_privileges_elevated: " > tmp
-                  echo "${PRIVILEGED}: " > tmp
-                  echo -n "  database_connections_max: " > tmp
-                  echo "${CONNECTIONS}: " > tmp
-                  cat tmp
-                  ./pgdeploy.sh target/audit-subscriber-${VERSION}.jar ${DOMAIN} ${APP_NAME} "audit-subscriber" ${BUILD_NUMBER} ${PREFIX}
-
+                  ./deploy_pgshared.sh target/postgresql-cf-service-broker-${VERSION}.jar
                   echo "Deploy finished!"
                 """
             }
