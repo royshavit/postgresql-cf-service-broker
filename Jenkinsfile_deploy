@@ -53,7 +53,18 @@ pipeline {
             }
 
         }
-
+        
+        stage('start vpn') {
+            when {
+                environment name: 'DOMAIN', value: 'gov-production'
+            }
+            steps {
+                sh """
+                  startvpn.sh
+                """
+            }
+        }
+        
         stage('Deploy to CF') {
             steps {
                 sh """
