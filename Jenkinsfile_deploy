@@ -1,13 +1,17 @@
 def artUploadServer = Artifactory.server('dawec')
 
 pipeline {
+
     agent {
         docker {
-          image 'registry.gear.ge.com/dig-propel/predixci-jdk8-ubuntu'
-          label 'dind'
+            image 'dig-propel/govcloud-deploy'
+            label 'dind'
+            args "--privileged --sysctl net.ipv6.conf.all.disable_ipv6=0"
+            registryUrl 'https://registry.gear.ge.com/'
+            registryCredentialsId 'registry-gear-credentials'
         }
     }
-
+    
     stages {
         stage('Clean src'){
             steps {
